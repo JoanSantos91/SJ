@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image, ImageOps
+import cv2
 
 # ============================================================
 # S & J — App de 6 meses
@@ -446,9 +447,72 @@ def media_for_moment(moment: dict):
     return photos, videos
 
 
+def preferred_roll_path(moment: dict) -> Path | None:
+    folder = MOMENTS_DIR / moment["slug"]
+    custom = {
+        "06_estes_park": ["photo_02.jpg", "photo_01.jpg", "photo_03.jpg", "photo_04.jpg", "cover.jpg"],
+        "07_black_hawk": ["photo_02.jpg", "photo_01.jpg", "cover.jpg"],
+    }
+    names = custom.get(moment["slug"], ["cover.jpg"])
+    for name in names:
+        p = folder / name
+        if p.exists():
+            return p
+    photos = sorted([p for p in folder.iterdir() if p.suffix.lower() in IMAGE_TYPES]) if folder.exists() else []
+    return photos[0] if photos else None
+
+
+def golden_roll_video_frame_uri(max_side: int = 520) -> str | None:
+    video = MOMENTS_DIR / "10_golden" / "video_01.mp4"
+    if not video.exists():
+        fallback = preferred_roll_path({"slug": "10_golden"})
+        return image_uri(fallback, max_side) if fallback else None
+    try:
+        cap = cv2.VideoCapture(str(video))
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        fps = float(cap.get(cv2.CAP_PROP_FPS) or 30.0)
+        candidates = []
+        if total > 0:
+            candidates = [int(total * p) for p in (0.28, 0.38, 0.48, 0.58, 0.68)]
+        else:
+            candidates = [int(fps * t) for t in (1.0, 1.8, 2.6, 3.4)]
+
+        best = None
+        best_score = -1
+        for idx in candidates:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, idx))
+            ok, frame = cap.read()
+            if not ok or frame is None:
+                continue
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w = frame.shape[:2]
+            x1 = 0
+            x2 = int(w * 0.78)
+            crop = frame[:, x1:x2]
+            # frame más nítido y luminoso, priorizando la zona izquierda/central para que no salga tanto quien graba
+            gray = cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY)
+            sharp = cv2.Laplacian(gray, cv2.CV_64F).var()
+            bright = gray.mean()
+            score = sharp + min(bright, 165) * 0.8
+            if score > best_score:
+                best_score = score
+                best = crop
+        cap.release()
+        if best is None:
+            return None
+        im = Image.fromarray(best).convert("RGB")
+        im.thumbnail((max_side, max_side))
+        from io import BytesIO
+        buf = BytesIO()
+        im.save(buf, format="JPEG", quality=84)
+        encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+        return f"data:image/jpeg;base64,{encoded}"
+    except Exception:
+        return None
+
+
 def cover_for(moment: dict) -> Path | None:
-    p = MOMENTS_DIR / moment["slug"] / "cover.jpg"
-    return p if p.exists() else None
+    return preferred_roll_path(moment)
 
 
 def safe_filename(name: str) -> str:
@@ -512,10 +576,11 @@ def polaroid_record(record: dict):
 def render_film_roll():
     frames = []
     for moment in MOMENTS:
-        cover = cover_for(moment)
-        if not cover:
-            continue
-        uri = image_uri(cover, 520)
+        if moment["slug"] == "10_golden":
+            uri = golden_roll_video_frame_uri(520)
+        else:
+            cover = cover_for(moment)
+            uri = image_uri(cover, 520) if cover else None
         if not uri:
             continue
         frames.append(
@@ -667,7 +732,7 @@ st.markdown(
       <div class="hero-kicker">Nuestro lugar favorito: juntos</div>
       <div class="hero-title">{INITIALS}</div>
       <div class="hero-sub">
-        Hola {BB} ♡ Este es nuestro álbum, nuestro mapa y un pedacito de todo lo que hemos vivido desde el 13 de marzo.
+        Hola {BB} ♡ Esta es nuestra historia: lo que vivimos antes de ser novios, el día en que empezó nuestro “nosotros” y todos los recuerdos que hemos creado desde entonces.
       </div>
       <div class="hero-heart">♡</div>
     </div>
