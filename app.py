@@ -217,13 +217,13 @@ h1,h2,h3 {font-family:Georgia,'Times New Roman',serif!important;}
 
 
 /* ============================================================
-   ÁLBUM VISUAL V15
+   ÁLBUM VISUAL V16
    Solo afecta la pestaña Álbum.
    ============================================================ */
 .album-intro{
   text-align:center;
   max-width:620px;
-  margin:0 auto 1.15rem;
+  margin:0 auto 1.05rem;
 }
 .album-intro-title{
   font:500 clamp(2rem,5vw,3rem)/1.08 Georgia,'Times New Roman',serif;
@@ -252,50 +252,131 @@ h1,h2,h3 {font-family:Georgia,'Times New Roman',serif!important;}
 .album-divider:after{
   background:linear-gradient(90deg,rgba(199,145,151,.55),transparent);
 }
-.album-card{
+
+/* Portadas / carpetas */
+.album-folder-card{
   background:#fffdf9;
-  border:1px solid rgba(135,101,84,.09);
-  border-radius:20px;
-  padding:7px 7px 12px;
-  margin:0 0 13px;
+  border:1px solid rgba(135,101,84,.10);
+  border-radius:21px;
+  padding:7px 7px 11px;
   box-shadow:0 9px 24px rgba(77,53,41,.09);
+  margin-bottom:.15rem;
   overflow:hidden;
 }
-.album-card img{
+.album-folder-card img{
   width:100%;
-  height:250px;
+  height:220px;
   object-fit:cover;
   display:block;
   border-radius:15px;
 }
-.album-card-caption{
-  text-align:center;
-  padding:10px 5px 1px;
-  color:#725c53;
+.album-folder-name{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  color:#70584e;
   font:500 .93rem/1.2 Georgia,'Times New Roman',serif;
-}
-.album-card-heart{
-  color:#cf9097;
-  font-size:.74rem;
-  margin-left:.24rem;
-}
-.album-location-break{
+  padding:10px 4px 3px;
   text-align:center;
-  margin:.8rem 0 .65rem;
-  color:#a88779;
-  font:500 .78rem/1.2 Georgia,'Times New Roman',serif;
-  letter-spacing:.14em;
-  text-transform:uppercase;
+}
+.album-folder-name span{
+  color:#cd9096;
+  font-size:.78rem;
+}
+
+/* Botón abrir carpeta */
+[class*="st-key-album_folder_"] .stButton>button{
+  width:100%!important;
+  min-height:38px!important;
+  border-radius:13px!important;
+  background:#fff8f3!important;
+  color:#886d63!important;
+  border:1px solid rgba(184,145,126,.18)!important;
+  box-shadow:none!important;
+  font-size:.80rem!important;
+  font-weight:600!important;
+}
+[class*="st-key-album_folder_"] .stButton>button:hover{
+  background:#f8eae5!important;
+  color:#b47379!important;
+}
+
+/* Interior de carpeta */
+.album-inside-head{
+  text-align:center;
+  margin:.2rem auto 1rem;
+}
+.album-inside-title{
+  font:500 clamp(1.8rem,5vw,2.55rem)/1.1 Georgia,'Times New Roman',serif;
+  color:#72574d;
+}
+.album-inside-sub{
+  color:#9a857c;
+  font-size:.86rem;
+  margin-top:.32rem;
+}
+.album-media-card{
+  background:#fffdf9;
+  border:1px solid rgba(135,101,84,.09);
+  border-radius:18px;
+  padding:6px 6px 8px;
+  box-shadow:0 8px 22px rgba(77,53,41,.08);
+  margin-bottom:10px;
+}
+.album-media-card img{
+  width:100%;
+  height:205px;
+  object-fit:cover;
+  display:block;
+  border-radius:13px;
+}
+.album-media-label{
+  text-align:center;
+  padding:7px 4px 2px;
+  color:#8a756b;
+  font:500 .78rem Georgia,'Times New Roman',serif;
+}
+[class*="st-key-album_thumb_"] .stButton>button{
+  width:100%!important;
+  min-height:35px!important;
+  border-radius:12px!important;
+  background:#fff8f3!important;
+  color:#8b7066!important;
+  border:1px solid rgba(184,145,126,.16)!important;
+  box-shadow:none!important;
+  font-size:.74rem!important;
+}
+.album-viewer{
+  background:#fffaf6;
+  border:1px solid rgba(184,145,126,.15);
+  border-radius:22px;
+  padding:9px;
+  margin:0 0 1.05rem;
+  box-shadow:0 10px 28px rgba(77,53,41,.08);
+}
+.album-viewer-title{
+  text-align:center;
+  color:#8b7167;
+  font:500 .85rem Georgia,'Times New Roman',serif;
+  padding:.35rem 0 .55rem;
+}
+.album-video-title{
+  color:#80675e;
+  font:500 1rem Georgia,'Times New Roman',serif;
+  margin:1rem 0 .45rem;
 }
 .album-upload-zone{
   margin-top:1.45rem;
   padding-top:1.2rem;
   border-top:1px solid rgba(170,135,116,.13);
 }
+
 @media(max-width:760px){
-  .album-card{border-radius:17px;padding:6px 6px 10px;margin-bottom:10px}
-  .album-card img{height:205px;border-radius:13px}
-  .album-card-caption{font-size:.85rem;padding-top:8px}
+  .album-folder-card{border-radius:17px;padding:6px 6px 9px}
+  .album-folder-card img{height:195px;border-radius:13px}
+  .album-folder-name{font-size:.84rem;padding-top:8px}
+  .album-media-card img{height:180px}
   .album-intro-title{font-size:2rem}
   .album-intro-sub{font-size:.91rem}
 }
@@ -616,25 +697,41 @@ def album_photos_for_moment(moment: dict) -> list[Path]:
     return unique
 
 
-def album_card(path: Path, location_name: str):
-    uri = image_uri(path, 850)
+def album_folder_card(moment: dict):
+    """Portada del álbum: exactamente la misma imagen usada en el rollo fotográfico."""
+    cover = cover_for(moment)
+    uri = image_uri(cover, 850) if cover else None
     if not uri:
         return
     st.markdown(
         f"""
-        <div class="album-card">
-          <img src="{uri}" alt="{location_name}">
-          <div class="album-card-caption">{location_name}<span class="album-card-heart">♡</span></div>
+        <div class="album-folder-card">
+          <img src="{uri}" alt="{moment['short']}">
+          <div class="album-folder-name">{moment['short']} <span>♡</span></div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def album_record_card(record: dict, location_name: str):
+def album_media_card(path: Path, label: str):
+    uri = image_uri(path, 850)
+    if not uri:
+        return
+    st.markdown(
+        f"""
+        <div class="album-media-card">
+          <img src="{uri}" alt="{label}">
+          <div class="album-media-label">{label}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def album_record_path(record: dict) -> Path | None:
     p = BASE_DIR / record.get("file", "")
-    if p.exists():
-        album_card(p, location_name)
+    return p if p.exists() else None
 
 
 def polaroid(path: Path, caption: str):
@@ -904,50 +1001,124 @@ if st.session_state.nav_section == "Inicio":
 # ALBUM
 # ------------------------------------------------------------
 if st.session_state.nav_section == "Álbum":
-    st.markdown(
-        """
-        <div class="album-intro">
-          <div class="album-intro-title">Nuestro álbum ♡</div>
-          <div class="album-intro-sub">
-            Todos nuestros recuerdos en un solo lugar. Sin abrir carpetas:
-            solo desliza y vuelve a cada momento, bb.
-          </div>
-          <div class="album-divider">♡</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    if "album_open_slug" not in st.session_state:
+        st.session_state.album_open_slug = None
+    if "album_view_photo" not in st.session_state:
+        st.session_state.album_view_photo = None
 
-    # Galería continua: todas las fotos visibles.
-    gallery_items = []
-
-    for moment in MOMENTS:
-        for photo in album_photos_for_moment(moment):
-            gallery_items.append(("file", photo, moment["short"]))
-
-        for record in bb_uploads(moment["slug"]):
-            gallery_items.append(("record", record, moment["short"]))
-
-    # Las fotos generales que bb agregue también viven en la galería.
-    for record in bb_uploads("general"):
-        gallery_items.append(("record", record, "Nosotros"))
-
-    if gallery_items:
-        # Dos columnas dan una apariencia de álbum móvil y permiten ver todo de un vistazo.
-        cols = st.columns(2, gap="small")
-        for i, (kind, item, location_name) in enumerate(gallery_items):
-            with cols[i % 2]:
-                if kind == "file":
-                    album_card(item, location_name)
-                else:
-                    album_record_card(item, location_name)
-    else:
+    # --------------------------------------------------------
+    # Vista general: una sola foto por lugar, como una carpeta
+    # --------------------------------------------------------
+    if not st.session_state.album_open_slug:
         st.markdown(
-            '<div class="paper-card center">Todavía no hay fotos aquí, bb ♡</div>',
+            """
+            <div class="album-intro">
+              <div class="album-intro-title">Nuestro álbum ♡</div>
+              <div class="album-intro-sub">Todos nuestros recuerdos en un solo lugar bb.</div>
+              <div class="album-divider">♡</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
-    # Se conserva la opción que ya tenía bb para agregar sus propias fotos.
+        folder_cols = st.columns(2, gap="small")
+        for i, moment in enumerate(MOMENTS):
+            with folder_cols[i % 2]:
+                with st.container(key=f"album_folder_{moment['slug']}"):
+                    album_folder_card(moment)
+                    if st.button(
+                        "📂 Abrir álbum",
+                        key=f"open_album_{moment['slug']}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.album_open_slug = moment["slug"]
+                        st.session_state.album_view_photo = None
+                        st.rerun()
+
+    # --------------------------------------------------------
+    # Interior de una carpeta
+    # --------------------------------------------------------
+    else:
+        chosen = next(
+            (m for m in MOMENTS if m["slug"] == st.session_state.album_open_slug),
+            None,
+        )
+
+        if chosen is None:
+            st.session_state.album_open_slug = None
+            st.session_state.album_view_photo = None
+            st.rerun()
+
+        if st.button("← Todos los álbumes", key="album_back"):
+            st.session_state.album_open_slug = None
+            st.session_state.album_view_photo = None
+            st.rerun()
+
+        st.markdown(
+            f"""
+            <div class="album-inside-head">
+              <div class="album-inside-title">{chosen['short']} ♡</div>
+              <div class="album-inside-sub">Toca una foto para verla completa.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        photos = album_photos_for_moment(chosen)
+        _, videos = media_for_moment(chosen)
+        user_records = bb_uploads(chosen["slug"])
+
+        # Fotos subidas por bb se agregan dentro de la carpeta correspondiente.
+        media_photos = [("file", p, chosen["short"]) for p in photos]
+        for record in user_records:
+            p = album_record_path(record)
+            if p:
+                media_photos.append(("record", p, chosen["short"]))
+
+        # Visor de foto completa
+        if st.session_state.album_view_photo:
+            viewer_path = Path(st.session_state.album_view_photo)
+            if viewer_path.exists():
+                st.markdown('<div class="album-viewer">', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="album-viewer-title">{chosen["short"]} ♡</div>',
+                    unsafe_allow_html=True,
+                )
+                st.image(str(viewer_path), use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # Miniaturas seleccionables
+        if media_photos:
+            media_cols = st.columns(2, gap="small")
+            for i, (kind, photo_path, label) in enumerate(media_photos):
+                with media_cols[i % 2]:
+                    with st.container(key=f"album_thumb_{chosen['slug']}_{i}"):
+                        album_media_card(photo_path, label)
+                        if st.button(
+                            "Ver completa",
+                            key=f"view_album_photo_{chosen['slug']}_{i}",
+                            use_container_width=True,
+                        ):
+                            st.session_state.album_view_photo = str(photo_path)
+                            st.rerun()
+        else:
+            st.markdown(
+                '<div class="paper-card center">Todavía no hay fotos dentro de este álbum, bb ♡</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Videos reproducibles dentro del mismo álbum
+        if videos:
+            st.markdown(
+                '<div class="album-video-title">Videos de este recuerdo ♡</div>',
+                unsafe_allow_html=True,
+            )
+            for video in videos:
+                st.video(str(video))
+
+    # --------------------------------------------------------
+    # Se conserva exactamente la opción de agregar fotos
+    # --------------------------------------------------------
     st.markdown('<div class="album-upload-zone"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Agrega tus favoritas, bb ♡</div>', unsafe_allow_html=True)
     st.markdown(
