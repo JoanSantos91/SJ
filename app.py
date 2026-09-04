@@ -468,6 +468,92 @@ h1,h2,h3 {font-family:Georgia,'Times New Roman',serif!important;}
   line-height:1.55;
 }
 
+
+/* ============================================================
+   ÁLBUM V18 — CLICK FUNCIONAL
+   Solo afecta la pestaña Álbum.
+   La foto ES el botón real para asegurar que funcione en móvil.
+   ============================================================ */
+[class*="st-key-album_folder_"] .stButton,
+[class*="st-key-album_thumb_"] .stButton{
+  position:static!important;
+  inset:auto!important;
+  z-index:auto!important;
+  margin:0!important;
+}
+
+[class*="st-key-album_folder_"] .stButton>button,
+[class*="st-key-album_thumb_"] .stButton>button{
+  opacity:1!important;
+  cursor:pointer!important;
+  overflow:hidden!important;
+}
+
+/* Portadas de los álbumes */
+[class*="st-key-album_folder_"] .stButton>button{
+  height:238px!important;
+  min-height:238px!important;
+  border-radius:18px!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  border:1px solid rgba(135,101,84,.10)!important;
+  box-shadow:0 9px 24px rgba(77,53,41,.09)!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  padding:0 8px 13px!important;
+}
+
+[class*="st-key-album_folder_"] .stButton>button p{
+  display:inline-block!important;
+  margin:0!important;
+  padding:7px 12px!important;
+  border-radius:999px!important;
+  background:rgba(43,31,27,.50)!important;
+  color:#fffaf6!important;
+  font:500 .88rem/1.15 Georgia,'Times New Roman',serif!important;
+  text-shadow:0 1px 5px rgba(0,0,0,.35)!important;
+  backdrop-filter:blur(4px);
+}
+
+/* Miniaturas dentro de cada álbum */
+[class*="st-key-album_thumb_"] .stButton>button{
+  height:198px!important;
+  min-height:198px!important;
+  border-radius:16px!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  border:1px solid rgba(135,101,84,.09)!important;
+  box-shadow:0 8px 22px rgba(77,53,41,.08)!important;
+  color:transparent!important;
+  font-size:0!important;
+  padding:0!important;
+}
+
+[class*="st-key-album_thumb_"] .stButton>button p{
+  display:none!important;
+}
+
+[class*="st-key-album_folder_"] .stButton>button:hover,
+[class*="st-key-album_thumb_"] .stButton>button:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:0 13px 30px rgba(77,53,41,.13)!important;
+  border-color:rgba(196,127,134,.24)!important;
+}
+
+@media(max-width:760px){
+  [class*="st-key-album_folder_"] .stButton>button{
+    height:210px!important;
+    min-height:210px!important;
+  }
+  [class*="st-key-album_thumb_"] .stButton>button{
+    height:180px!important;
+    min-height:180px!important;
+  }
+}
+
 @media(max-width:760px){
   .album-folder-card{border-radius:17px;padding:6px 6px 9px}
   .album-folder-card img{height:195px;border-radius:13px}
@@ -791,6 +877,76 @@ def album_photos_for_moment(moment: dict) -> list[Path]:
         fingerprints.add(fingerprint)
         unique.append(p)
     return unique
+
+
+def _album_button_background(container_key: str, uri: str | None, *, bb_empty: bool = False):
+    """Aplica una imagen de fondo al botón real de Streamlit."""
+    if uri:
+        bg = f'linear-gradient(180deg, rgba(0,0,0,.02) 50%, rgba(30,20,17,.28) 100%), url("{uri}")'
+    elif bb_empty:
+        bg = "linear-gradient(145deg,#f8e6e4,#fff8f4)"
+    else:
+        bg = "linear-gradient(145deg,#efe3da,#fffaf6)"
+
+    st.markdown(
+        f"""
+        <style>
+        .st-key-{container_key} .stButton>button {{
+          background-image:{bg}!important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def clickable_album_folder(moment: dict) -> bool:
+    """La portada completa es el botón para entrar al álbum."""
+    cover = cover_for(moment)
+    uri = image_uri(cover, 850) if cover else None
+    container_key = f"album_folder_{moment['slug']}"
+    _album_button_background(container_key, uri)
+
+    with st.container(key=container_key):
+        return st.button(
+            f"{moment['short']} ♡",
+            key=f"open_album_{moment['slug']}",
+            use_container_width=True,
+        )
+
+
+def clickable_bb_folder(records: list[dict]) -> bool:
+    """Carpeta única para todo lo que bb haya subido."""
+    first_path = None
+    for record in records:
+        p = album_record_path(record)
+        if p:
+            first_path = p
+            break
+
+    uri = image_uri(first_path, 850) if first_path else None
+    container_key = "album_folder_bb_uploads"
+    _album_button_background(container_key, uri, bb_empty=(uri is None))
+
+    with st.container(key=container_key):
+        return st.button(
+            "Fotos de bb ♡",
+            key="open_album_bb_uploads",
+            use_container_width=True,
+        )
+
+
+def clickable_album_photo(path: Path, container_key: str, button_key: str) -> bool:
+    """La miniatura completa es el botón para abrir la foto en grande."""
+    uri = image_uri(path, 850)
+    _album_button_background(container_key, uri)
+
+    with st.container(key=container_key):
+        return st.button(
+            "Ver foto",
+            key=button_key,
+            use_container_width=True,
+        )
 
 
 def album_folder_card(moment: dict):
@@ -1137,7 +1293,7 @@ if st.session_state.nav_section == "Álbum":
         st.session_state.album_view_photo = None
 
     # --------------------------------------------------------
-    # Vista general: una portada por lugar + carpeta de bb
+    # Vista general: tocar la FOTO abre directamente el álbum
     # --------------------------------------------------------
     if not st.session_state.album_open_slug:
         st.markdown(
@@ -1151,35 +1307,21 @@ if st.session_state.nav_section == "Álbum":
             unsafe_allow_html=True,
         )
 
-        # Cada imagen funciona directamente como botón para abrir su álbum.
         folder_cols = st.columns(2, gap="small")
         for i, moment in enumerate(MOMENTS):
             with folder_cols[i % 2]:
-                with st.container(key=f"album_folder_{moment['slug']}"):
-                    album_folder_card(moment)
-                    if st.button(
-                        f"Abrir {moment['short']}",
-                        key=f"open_album_{moment['slug']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.album_open_slug = moment["slug"]
-                        st.session_state.album_view_photo = None
-                        st.rerun()
-
-        # Una única carpeta con TODO lo que bb haya subido.
-        bb_records_all = bb_uploads()
-        next_index = len(MOMENTS)
-        with folder_cols[next_index % 2]:
-            with st.container(key="album_folder_bb_uploads"):
-                bb_folder_card(bb_records_all)
-                if st.button(
-                    "Abrir fotos de bb",
-                    key="open_album_bb_uploads",
-                    use_container_width=True,
-                ):
-                    st.session_state.album_open_slug = "__bb_uploads__"
+                if clickable_album_folder(moment):
+                    st.session_state.album_open_slug = moment["slug"]
                     st.session_state.album_view_photo = None
                     st.rerun()
+
+        # Carpeta única de todo lo que suba bb.
+        bb_records_all = bb_uploads()
+        with folder_cols[len(MOMENTS) % 2]:
+            if clickable_bb_folder(bb_records_all):
+                st.session_state.album_open_slug = "__bb_uploads__"
+                st.session_state.album_view_photo = None
+                st.rerun()
 
     # --------------------------------------------------------
     # Carpeta especial: todas las fotos subidas por bb
@@ -1194,7 +1336,7 @@ if st.session_state.nav_section == "Álbum":
             """
             <div class="album-inside-head">
               <div class="album-inside-title">Fotos de bb ♡</div>
-              <div class="album-inside-sub">Todo lo que tú quieras agregar a nuestra historia vive aquí.</div>
+              <div class="album-inside-sub">Toca una foto para verla completa.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1207,6 +1349,7 @@ if st.session_state.nav_section == "Álbum":
             if p:
                 bb_photo_items.append((p, record.get("title") or "Foto de bb"))
 
+        # Foto seleccionada en tamaño grande.
         if st.session_state.album_view_photo:
             viewer_path = Path(st.session_state.album_view_photo)
             if viewer_path.exists():
@@ -1222,15 +1365,13 @@ if st.session_state.nav_section == "Álbum":
             media_cols = st.columns(2, gap="small")
             for i, (photo_path, label) in enumerate(bb_photo_items):
                 with media_cols[i % 2]:
-                    with st.container(key=f"album_thumb_bb_{i}"):
-                        album_media_card(photo_path, label)
-                        if st.button(
-                            f"Ver foto {i+1}",
-                            key=f"view_album_bb_photo_{i}",
-                            use_container_width=True,
-                        ):
-                            st.session_state.album_view_photo = str(photo_path)
-                            st.rerun()
+                    if clickable_album_photo(
+                        photo_path,
+                        container_key=f"album_thumb_bb_{i}",
+                        button_key=f"view_album_bb_photo_{i}",
+                    ):
+                        st.session_state.album_view_photo = str(photo_path)
+                        st.rerun()
         else:
             st.markdown(
                 """
@@ -1274,10 +1415,7 @@ if st.session_state.nav_section == "Álbum":
         photos = album_photos_for_moment(chosen)
         _, videos = media_for_moment(chosen)
 
-        # Ya NO se mezclan fotos subidas por bb dentro de cada lugar.
-        media_photos = [("file", p, chosen["short"]) for p in photos]
-
-        # Visor de foto completa
+        # Foto seleccionada en tamaño grande.
         if st.session_state.album_view_photo:
             viewer_path = Path(st.session_state.album_view_photo)
             if viewer_path.exists():
@@ -1289,27 +1427,25 @@ if st.session_state.nav_section == "Álbum":
                 st.image(str(viewer_path), use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # Las miniaturas son directamente clicables.
-        if media_photos:
+        # Cada miniatura es ahora el botón real.
+        if photos:
             media_cols = st.columns(2, gap="small")
-            for i, (kind, photo_path, label) in enumerate(media_photos):
+            for i, photo_path in enumerate(photos):
                 with media_cols[i % 2]:
-                    with st.container(key=f"album_thumb_{chosen['slug']}_{i}"):
-                        album_media_card(photo_path, label)
-                        if st.button(
-                            f"Ver foto {i+1}",
-                            key=f"view_album_photo_{chosen['slug']}_{i}",
-                            use_container_width=True,
-                        ):
-                            st.session_state.album_view_photo = str(photo_path)
-                            st.rerun()
+                    if clickable_album_photo(
+                        photo_path,
+                        container_key=f"album_thumb_{chosen['slug']}_{i}",
+                        button_key=f"view_album_photo_{chosen['slug']}_{i}",
+                    ):
+                        st.session_state.album_view_photo = str(photo_path)
+                        st.rerun()
         else:
             st.markdown(
                 '<div class="paper-card center">Todavía no hay fotos dentro de este álbum, bb ♡</div>',
                 unsafe_allow_html=True,
             )
 
-        # Videos reproducibles dentro del mismo álbum.
+        # Los videos siguen dentro del álbum y se pueden reproducir.
         if videos:
             st.markdown(
                 '<div class="album-video-title">Videos de este recuerdo ♡</div>',
@@ -1319,7 +1455,7 @@ if st.session_state.nav_section == "Álbum":
                 st.video(str(video))
 
     # --------------------------------------------------------
-    # Subidas de bb: TODO va a una sola carpeta
+    # Subidas de bb: se conserva la carpeta única
     # --------------------------------------------------------
     st.markdown('<div class="album-upload-zone"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Agrega tus favoritas, bb ♡</div>', unsafe_allow_html=True)
@@ -1342,7 +1478,6 @@ if st.session_state.nav_section == "Álbum":
         if not files:
             st.warning("Primero elige al menos una foto, bb ♡")
         else:
-            # A partir de ahora todo lo que suba bb se guarda en la carpeta general.
             ok, saved = save_bb_uploads("general", title, message, files)
             if ok and saved:
                 st.success(f"Listo bb ♡ Guardé {saved} foto(s) en tu carpeta.")
