@@ -930,7 +930,7 @@ def clickable_bb_folder(records: list[dict]) -> bool:
 
     with st.container(key=container_key):
         return st.button(
-            "Fotos de bb ♡",
+            "Álbum de mi bb ♡",
             key="open_album_bb_uploads",
             use_container_width=True,
         )
@@ -1335,7 +1335,7 @@ if st.session_state.nav_section == "Álbum":
         st.markdown(
             """
             <div class="album-inside-head">
-              <div class="album-inside-title">Fotos de bb ♡</div>
+              <div class="album-inside-title">Álbum de mi bb ♡</div>
               <div class="album-inside-sub">Toca una foto para verla completa.</div>
             </div>
             """,
