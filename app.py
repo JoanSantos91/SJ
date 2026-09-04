@@ -128,9 +128,11 @@ MOMENTS = [
 QUESTIONS = [
     "¿Qué fue lo que más te gustó de mí antes de que fuéramos novios?",
     "¿Qué es lo que más te ha gustado que he hecho por ti desde que somos novios?",
+    "¿Qué cosa hacemos juntos que te gustaría que nunca dejáramos de hacer?",
+    "¿Qué salida o viaje nuestro repetirías mañana sin pensarlo?",
     "Dime 3 cosas de mí que te gusten — pueden ser de mi forma de ser, físicas o de cómo te trato.",
-    "¿Cuál de nuestras salidas o viajes repetirías mañana sin pensarlo y por qué?",
-    "¿Qué es algo que te gustaría que viviéramos juntos en nuestros próximos 6 meses?",
+    "¿Qué es algo que te gustaría que viviéramos juntos en nuestro próximo año?",
+    "¿Qué lugar nuevo te gustaría conocer conmigo? Y si mañana pudiéramos tomar un avión sin preocuparnos por nada, ¿a qué país te gustaría que fuéramos juntos?",
 ]
 
 REASONS = [
@@ -1619,10 +1621,10 @@ if st.session_state.nav_section == "Mapa":
     )
 
 # ------------------------------------------------------------
-# 5 PREGUNTAS
+# 7 PREGUNTAS
 # ------------------------------------------------------------
 if st.session_state.nav_section == "Preguntas":
-    st.markdown(f'<div class="section-title">5 preguntas para ti, {BB} ♡</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-title">7 preguntas para ti, {BB} ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">No es un examen. Solo quiero saber cómo se ve nuestra historia desde tus ojos.</div>', unsafe_allow_html=True)
 
     saved_answers = read_json(ANSWERS_DB, {})
