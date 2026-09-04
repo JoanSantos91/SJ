@@ -136,16 +136,16 @@ QUESTIONS = [
 ]
 
 REASONS = [
-    "Porque contigo puedo ser yo, sin filtros y sin sentir que tengo que fingir nada.",
-    "Porque tu sonrisa tiene una forma muy tuya de cambiarme el día.",
-    "Porque incluso un plan sencillo termina sintiéndose especial si estoy contigo.",
     "Porque amo nuestra complicidad y esas cosas que solo tú y yo entendemos.",
-    "Porque contigo siempre quiero sumar otra salida, otro viaje y otra aventura.",
     "Porque admiro todo eso que te hace ser tú, bb.",
+    "Porque contigo siento esa tranquilidad de saber que estoy donde quiero estar.",
     "Porque verte feliz también se ha convertido en una de mis cosas favoritas.",
-    "Porque contigo he aprendido a disfrutar más el presente y los pequeños momentos.",
-    "Porque nuestras risas, conversaciones y locuras ya forman parte de mis recuerdos favoritos.",
-    "Porque entre todas las posibilidades, bb, me sigue encantando elegirte a ti.",
+    "Porque me encanta descubrir nuevas versiones de ti mientras seguimos conociéndonos.",
+    "Porque contigo me dan ganas de seguir creciendo y ser una mejor versión de mí.",
+    "Porque eres alguien a quien quiero tener a mi lado tanto en las aventuras como en los días tranquilos.",
+    "Porque contigo quiero conocer nuevos lugares, nuevas ciudades y nuevos países.",
+    "Porque me encanta saber que todavía nos quedan muchísimas primeras veces juntos.",
+    "Porque cuando pienso en mi futuro, te imagino formando parte de él.",
 ]
 
 # ============================================================
@@ -1654,7 +1654,7 @@ if st.session_state.nav_section == "Preguntas":
 # ------------------------------------------------------------
 if st.session_state.nav_section == "Razones":
     st.markdown('<div class="section-title">10 razones por las que amo estar contigo ♡</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="section-sub">Toca un corazón, {BB}. No quiero que las leas todas de golpe.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Toca un corazón bb</div>', unsafe_allow_html=True)
 
     cols = st.columns(5)
     for i in range(10):
