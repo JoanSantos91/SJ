@@ -1026,6 +1026,65 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
   }
 }
 
+
+/* ============================================================
+   V25 — Razones optimizadas para celular
+   Solo afecta los 10 corazones de esta pestaña.
+   ============================================================ */
+[class*="st-key-reason_pair_"] [data-testid="stHorizontalBlock"]{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  gap:.65rem!important;
+}
+[class*="st-key-reason_pair_"] [data-testid="stColumn"]{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+[class*="st-key-reason_pair_"] .stButton{
+  display:flex!important;
+  justify-content:center!important;
+  margin:0 0 .38rem!important;
+}
+[class*="st-key-reason_pair_"] .stButton>button{
+  width:100%!important;
+  max-width:155px!important;
+  min-height:46px!important;
+  padding:.18rem .35rem!important;
+  border-radius:999px!important;
+  font-size:.98rem!important;
+}
+[class*="st-key-reason_pair_"] .stButton>button p{
+  font-size:.98rem!important;
+  line-height:1!important;
+  margin:0!important;
+}
+
+@media(max-width:760px){
+  [class*="st-key-reason_pair_"] [data-testid="stHorizontalBlock"]{
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    gap:.48rem!important;
+  }
+  [class*="st-key-reason_pair_"] [data-testid="stColumn"]{
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+  }
+  [class*="st-key-reason_pair_"] .stButton>button{
+    width:100%!important;
+    max-width:none!important;
+    min-height:42px!important;
+    padding:.12rem .20rem!important;
+    border-radius:999px!important;
+  }
+  [class*="st-key-reason_pair_"] .stButton>button,
+  [class*="st-key-reason_pair_"] .stButton>button p{
+    font-size:.90rem!important;
+  }
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -2151,21 +2210,20 @@ if st.session_state.nav_section == "Razones":
     st.markdown('<div class="section-title">10 razones por las que amo estar contigo ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Toca un corazón bb</div>', unsafe_allow_html=True)
 
-    with st.container(key="reason_row_1"):
-        row1 = st.columns(5, gap="small")
-        for idx, col in enumerate(row1):
-            i = idx
-            with col:
-                if st.button(f"♡ {i+1}", key=f"reason_{i}", use_container_width=True):
-                    st.session_state.reason_selected = i
-
-    with st.container(key="reason_row_2"):
-        row2 = st.columns(5, gap="small")
-        for idx, col in enumerate(row2):
-            i = 5 + idx
-            with col:
-                if st.button(f"♡ {i+1}", key=f"reason_{i}", use_container_width=True):
-                    st.session_state.reason_selected = i
+    # Dos corazones por fila para que en celular se vean completos,
+    # centrados y en orden: 1-2, 3-4, 5-6, 7-8, 9-10.
+    for row in range(5):
+        with st.container(key=f"reason_pair_{row}"):
+            pair_cols = st.columns(2, gap="small")
+            for pos, col in enumerate(pair_cols):
+                i = row * 2 + pos
+                with col:
+                    if st.button(
+                        f"♡ {i+1}",
+                        key=f"reason_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.reason_selected = i
 
     if st.session_state.reason_selected is None:
         st.markdown('<div class="scrap-note"><h3>Hay 10 pequeños mensajes escondidos aquí ♡</h3><p class="center">Elige el corazón que quieras abrir primero.</p></div>', unsafe_allow_html=True)
