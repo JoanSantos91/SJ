@@ -9,6 +9,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image, ImageOps
@@ -69,8 +70,8 @@ MOMENTS = [
         "short": "TopGolf",
         "category": "Salida",
         "phrase": "Competencia, risas y otro plan que terminó siendo de mis favoritos contigo.",
-        "coords": None,
-        "map_note": "Dime después cuál TopGolf fue y lo ponemos exacto en el mapa.",
+        "coords": (39.5891762, -104.8653107),
+        "map_note": "10601 E Easter Ave, Centennial, Colorado.",
     },
     {
         "slug": "05_primera_salida",
@@ -1492,36 +1493,120 @@ if st.session_state.nav_section == "Álbum":
 # MAPA
 # ------------------------------------------------------------
 if st.session_state.nav_section == "Mapa":
-    st.markdown('<div class="section-title">Nuestro mapa de recuerdos 📍</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Cada punto es una historia que ya podemos volver a visitar. Los lugares privados no aparecen por ubicación.</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <style>
+        .map-future-card{
+          margin:1.15rem 0 .3rem;
+          padding:1.15rem 1rem;
+          border-radius:20px;
+          text-align:center;
+          background:linear-gradient(180deg,#fffaf6 0%,#f6e8e3 100%);
+          border:1px solid rgba(198,143,147,.18);
+          box-shadow:0 8px 24px rgba(77,53,41,.07);
+          color:#806961;
+          font:500 .98rem/1.55 Georgia,'Times New Roman',serif;
+        }
+        .map-future-card .heart{
+          color:#c9858c;
+          margin:0 .15rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="section-title">Nuestro mapa de recuerdos 📍</div>',
+        unsafe_allow_html=True,
+    )
 
     mapped = [m for m in MOMENTS if m.get("coords")]
-    df = pd.DataFrame([
-        {"lat": m["coords"][0], "lon": m["coords"][1], "Lugar": m["title"]}
-        for m in mapped
-    ])
-    st.map(df, latitude="lat", longitude="lon", size=90, zoom=5)
+    map_data = pd.DataFrame(
+        [
+            {
+                "lat": m["coords"][0],
+                "lon": m["coords"][1],
+                "Lugar": m["title"],
+                "slug": m["slug"],
+            }
+            for m in mapped
+        ]
+    )
 
-    place = st.selectbox("Explora un punto del mapa", [m["title"] for m in mapped], key="map_place")
-    chosen = next(m for m in mapped if m["title"] == place)
-    cover = cover_for(chosen)
-    c1, c2 = st.columns([.8, 1.2])
-    with c1:
-        if cover:
-            polaroid(cover, chosen["short"])
-    with c2:
-        st.markdown(
-            f"""
-            <div class="paper-card">
-              <h3 style="margin-top:0">{chosen['title']}</h3>
-              <p style="font-family:Georgia,serif;font-style:italic">“{chosen['phrase']}”</p>
-              <p class="small">Cada lugar, un recuerdo. Cada recuerdo, tú y yo. ♡</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    point_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=map_data,
+        id="memory-points",
+        get_position="[lon, lat]",
+        get_fill_color="[201, 126, 137, 220]",
+        get_line_color="[255, 248, 244, 255]",
+        get_radius=12000,
+        radius_min_pixels=7,
+        radius_max_pixels=14,
+        line_width_min_pixels=2,
+        stroked=True,
+        filled=True,
+        pickable=True,
+        auto_highlight=True,
+    )
 
-    st.info("TopGolf y nuestra primera salida todavía no tienen ubicación exacta en el mapa. En cuanto me digas dónde fueron, los agregamos. La comida en el depa se mantiene privada a propósito.")
+    view_state = pdk.ViewState(
+        latitude=38.75,
+        longitude=-108.8,
+        zoom=4.25,
+        pitch=0,
+        bearing=0,
+    )
+
+    deck = pdk.Deck(
+        layers=[point_layer],
+        initial_view_state=view_state,
+        map_style=None,
+        tooltip={"text": "{Lugar}"},
+    )
+
+    map_event = st.pydeck_chart(
+        deck,
+        height=430,
+        on_select="rerun",
+        selection_mode="single-object",
+        key="memory_map_select",
+    )
+
+    # Al tocar un punto, debajo aparecen únicamente las fotos de ese lugar.
+    selected_objects = []
+    try:
+        selected_objects = map_event.selection.objects.get("memory-points", [])
+    except Exception:
+        try:
+            selected_objects = map_event["selection"]["objects"].get("memory-points", [])
+        except Exception:
+            selected_objects = []
+
+    if selected_objects:
+        selected_slug = selected_objects[0].get("slug")
+        chosen = next((m for m in mapped if m["slug"] == selected_slug), None)
+
+        if chosen:
+            photos = album_photos_for_moment(chosen)
+
+            if photos:
+                photo_cols = st.columns(2, gap="small")
+                for i, photo in enumerate(photos):
+                    with photo_cols[i % 2]:
+                        st.image(str(photo), use_container_width=True)
+
+    st.markdown(
+        """
+        <div class="map-future-card">
+          Próximamente tendremos muchos más viajes, bb <span class="heart">♡</span><br>
+          Este mapa se irá llenando de nuevos lugares, nuevas ciudades y nuevas aventuras
+          en distintas partes del mundo. Todavía nos quedan muchos lugares y países por descubrir juntos.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ------------------------------------------------------------
 # 5 PREGUNTAS
