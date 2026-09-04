@@ -215,6 +215,91 @@ h1,h2,h3 {font-family:Georgia,'Times New Roman',serif!important;}
 .polaroid img {width:100%;height:300px;object-fit:cover;display:block;border-radius:2px;}
 .polaroid-caption {padding:11px 5px 0;text-align:center;font:500 .98rem Georgia,serif;color:#574943;}
 
+
+/* ============================================================
+   ÁLBUM VISUAL V15
+   Solo afecta la pestaña Álbum.
+   ============================================================ */
+.album-intro{
+  text-align:center;
+  max-width:620px;
+  margin:0 auto 1.15rem;
+}
+.album-intro-title{
+  font:500 clamp(2rem,5vw,3rem)/1.08 Georgia,'Times New Roman',serif;
+  color:#76584e;
+  margin-bottom:.38rem;
+}
+.album-intro-sub{
+  color:#8d7b72;
+  font-size:.96rem;
+  line-height:1.55;
+}
+.album-divider{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:.55rem 0 1.15rem;
+  color:#ce9197;
+}
+.album-divider:before,.album-divider:after{
+  content:"";
+  height:1px;
+  width:54px;
+  background:linear-gradient(90deg,transparent,rgba(199,145,151,.55));
+}
+.album-divider:after{
+  background:linear-gradient(90deg,rgba(199,145,151,.55),transparent);
+}
+.album-card{
+  background:#fffdf9;
+  border:1px solid rgba(135,101,84,.09);
+  border-radius:20px;
+  padding:7px 7px 12px;
+  margin:0 0 13px;
+  box-shadow:0 9px 24px rgba(77,53,41,.09);
+  overflow:hidden;
+}
+.album-card img{
+  width:100%;
+  height:250px;
+  object-fit:cover;
+  display:block;
+  border-radius:15px;
+}
+.album-card-caption{
+  text-align:center;
+  padding:10px 5px 1px;
+  color:#725c53;
+  font:500 .93rem/1.2 Georgia,'Times New Roman',serif;
+}
+.album-card-heart{
+  color:#cf9097;
+  font-size:.74rem;
+  margin-left:.24rem;
+}
+.album-location-break{
+  text-align:center;
+  margin:.8rem 0 .65rem;
+  color:#a88779;
+  font:500 .78rem/1.2 Georgia,'Times New Roman',serif;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.album-upload-zone{
+  margin-top:1.45rem;
+  padding-top:1.2rem;
+  border-top:1px solid rgba(170,135,116,.13);
+}
+@media(max-width:760px){
+  .album-card{border-radius:17px;padding:6px 6px 10px;margin-bottom:10px}
+  .album-card img{height:205px;border-radius:13px}
+  .album-card-caption{font-size:.85rem;padding-top:8px}
+  .album-intro-title{font-size:2rem}
+  .album-intro-sub{font-size:.91rem}
+}
+
 .location-card {background:#fffaf6;border:1px solid rgba(189,148,84,.18);border-radius:20px;padding:18px;margin-bottom:12px;}
 .location-title {font:500 1.3rem Georgia,serif;}
 .location-category {display:inline-block;color:#a56f6f;background:#f3dcd9;border-radius:999px;padding:4px 10px;font-size:.73rem;margin:.4rem 0;}
@@ -504,6 +589,54 @@ def bb_uploads(album: str | None = None):
     return [r for r in records if r.get("album") == album]
 
 
+
+def album_photos_for_moment(moment: dict) -> list[Path]:
+    """Todas las fotos del recuerdo, evitando duplicados exactos."""
+    folder = MOMENTS_DIR / moment["slug"]
+    if not folder.exists():
+        return []
+
+    candidates = sorted(
+        [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_TYPES],
+        key=lambda p: (0 if p.name == "cover.jpg" else 1, p.name.lower()),
+    )
+
+    unique = []
+    fingerprints = set()
+    for p in candidates:
+        try:
+            data = p.read_bytes()
+            fingerprint = (len(data), hash(data))
+        except Exception:
+            fingerprint = (p.name, p.stat().st_size if p.exists() else 0)
+        if fingerprint in fingerprints:
+            continue
+        fingerprints.add(fingerprint)
+        unique.append(p)
+    return unique
+
+
+def album_card(path: Path, location_name: str):
+    uri = image_uri(path, 850)
+    if not uri:
+        return
+    st.markdown(
+        f"""
+        <div class="album-card">
+          <img src="{uri}" alt="{location_name}">
+          <div class="album-card-caption">{location_name}<span class="album-card-heart">♡</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def album_record_card(record: dict, location_name: str):
+    p = BASE_DIR / record.get("file", "")
+    if p.exists():
+        album_card(p, location_name)
+
+
 def polaroid(path: Path, caption: str):
     uri = image_uri(path)
     if not uri:
@@ -771,51 +904,56 @@ if st.session_state.nav_section == "Inicio":
 # ALBUM
 # ------------------------------------------------------------
 if st.session_state.nav_section == "Álbum":
-    st.markdown('<div class="section-title">Nuestro álbum ♡</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Cada lugar tiene su propia pequeña historia. Abre los recuerdos y recórrelos a tu ritmo.</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="album-intro">
+          <div class="album-intro-title">Nuestro álbum ♡</div>
+          <div class="album-intro-sub">
+            Todos nuestros recuerdos en un solo lugar. Sin abrir carpetas:
+            solo desliza y vuelve a cada momento, bb.
+          </div>
+          <div class="album-divider">♡</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # Mini navegación por recuerdo
-    moment_names = [m["title"] for m in MOMENTS]
-    selected_name = st.selectbox("Ir directamente a un recuerdo", ["Ver todos"] + moment_names)
-    filtered = MOMENTS if selected_name == "Ver todos" else [m for m in MOMENTS if m["title"] == selected_name]
+    # Galería continua: todas las fotos visibles.
+    gallery_items = []
 
-    for n, moment in enumerate(filtered, 1):
-        photos, videos = media_for_moment(moment)
-        user_records = bb_uploads(moment["slug"])
-        with st.expander(f"{moment['short']} · {moment['category']} ♡", expanded=(selected_name != "Ver todos" or n == 1)):
-            st.markdown(
-                f"""
-                <div class="location-card">
-                  <div class="location-title">{moment['title']}</div>
-                  <div class="location-category">{moment['category']}</div>
-                  <div class="location-phrase">“{moment['phrase']}”</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    for moment in MOMENTS:
+        for photo in album_photos_for_moment(moment):
+            gallery_items.append(("file", photo, moment["short"]))
 
-            all_photo_items = [(p, moment["short"]) for p in photos]
-            cols = st.columns(2 if len(all_photo_items) > 1 else 1)
-            for i, (photo, caption) in enumerate(all_photo_items):
-                with cols[i % len(cols)]:
-                    polaroid(photo, caption)
+        for record in bb_uploads(moment["slug"]):
+            gallery_items.append(("record", record, moment["short"]))
 
-            if videos:
-                st.markdown("**Un pedacito en movimiento 🎥**")
-                for video in videos:
-                    st.video(str(video))
+    # Las fotos generales que bb agregue también viven en la galería.
+    for record in bb_uploads("general"):
+        gallery_items.append(("record", record, "Nosotros"))
 
-            if user_records:
-                st.markdown(f"**Fotos que {BB} agregó a este recuerdo ♡**")
-                ucols = st.columns(2)
-                for i, record in enumerate(user_records):
-                    with ucols[i % 2]:
-                        polaroid_record(record)
+    if gallery_items:
+        # Dos columnas dan una apariencia de álbum móvil y permiten ver todo de un vistazo.
+        cols = st.columns(2, gap="small")
+        for i, (kind, item, location_name) in enumerate(gallery_items):
+            with cols[i % 2]:
+                if kind == "file":
+                    album_card(item, location_name)
+                else:
+                    album_record_card(item, location_name)
+    else:
+        st.markdown(
+            '<div class="paper-card center">Todavía no hay fotos aquí, bb ♡</div>',
+            unsafe_allow_html=True,
+        )
 
-    # Fotos nuevas de ella
-    st.write("")
+    # Se conserva la opción que ya tenía bb para agregar sus propias fotos.
+    st.markdown('<div class="album-upload-zone"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Agrega tus favoritas, bb ♡</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Puedes sumar fotos tuyas que quieras guardar dentro de nuestro álbum.</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-sub">Puedes sumar fotos tuyas que quieras guardar dentro de nuestro álbum.</div>',
+        unsafe_allow_html=True,
+    )
 
     with st.form("bb_upload_form", clear_on_submit=True):
         album_label = st.selectbox(
@@ -824,7 +962,11 @@ if st.session_state.nav_section == "Álbum":
         )
         title = st.text_input("Ponle un nombre", placeholder="Ej. Una de mis fotos favoritas")
         message = st.text_area("¿Quieres escribir algo?", placeholder="Ej. Me encanta este día porque…", height=85)
-        files = st.file_uploader("Sube una o varias fotos", type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True)
+        files = st.file_uploader(
+            "Sube una o varias fotos",
+            type=["jpg", "jpeg", "png", "webp"],
+            accept_multiple_files=True,
+        )
         submitted = st.form_submit_button("Guardar en nuestro álbum ♡", use_container_width=True)
 
     if submitted:
@@ -838,15 +980,10 @@ if st.session_state.nav_section == "Álbum":
                 st.success(f"Listo bb ♡ Guardé {saved} foto(s) en nuestro álbum.")
                 st.rerun()
             else:
-                st.error("No pude guardar las fotos en el disco de esta versión. Más adelante podemos conectarlo a Supabase para que queden guardadas en la nube.")
-
-    general_records = bb_uploads("general")
-    if general_records:
-        st.markdown("### Las favoritas que bb agregó ♡")
-        gcols = st.columns(3)
-        for i, record in enumerate(general_records):
-            with gcols[i % 3]:
-                polaroid_record(record)
+                st.error(
+                    "No pude guardar las fotos en el disco de esta versión. "
+                    "Más adelante podemos conectarlo a Supabase para que queden guardadas en la nube."
+                )
 
 # ------------------------------------------------------------
 # MAPA
