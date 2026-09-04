@@ -758,7 +758,7 @@ if st.session_state.nav_section == "Inicio":
               <h3 style="margin-top:0">Lo que ya vive aquí</h3>
               <p>♡ 10 recuerdos organizados por lugar o salida.</p>
               <p>♡ Fotos estilo Polaroid y videos de nuestras aventuras.</p>
-              <p>♡ Un mapa de los lugares públicos que hemos visitado.</p>
+              <p>♡ Un mapa de los lugares que hemos visitado bb.</p>
               <p>♡ 5 preguntas para ver nuestra historia desde tus ojos.</p>
               <p>♡ 10 razones escondidas para descubrir una por una.</p>
               <p>♡ Y un espacio para que tú también agregues tus fotos favoritas.</p>
