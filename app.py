@@ -3,6 +3,9 @@ from __future__ import annotations
 import base64
 import calendar
 import json
+import mimetypes
+import os
+import tempfile
 import re
 import uuid
 from datetime import date, datetime
@@ -13,6 +16,7 @@ import pydeck as pdk
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image, ImageOps
+from supabase import Client, create_client
 
 # ============================================================
 # S & J — App de 6 meses
@@ -34,6 +38,48 @@ BB = "bb"
 RELATIONSHIP_START = date(2026, 3, 13)
 SIX_MONTH_DATE = date(2026, 9, 13)
 ACCESS_CODE = "13032026"
+
+# ============================================================
+# Supabase — persistencia de fotos de bb y respuestas
+# ============================================================
+SUPABASE_BUCKET = "bb-uploads"
+SUPABASE_MEMORIES_TABLE = "bb_memories"
+SUPABASE_ANSWERS_TABLE = "question_answers"
+SUPABASE_CACHE_DIR = Path(tempfile.gettempdir()) / "sj_supabase_cache"
+SUPABASE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _secret_value(name: str) -> str | None:
+    """Lee primero Streamlit Secrets y luego variables de entorno."""
+    try:
+        value = st.secrets.get(name)
+        if value:
+            return str(value)
+    except Exception:
+        pass
+    value = os.getenv(name)
+    return value if value else None
+
+
+@st.cache_resource
+def get_supabase_client() -> Client | None:
+    """
+    Streamlit corre este código en el servidor.
+    La secret key nunca debe guardarse en GitHub.
+    """
+    url = _secret_value("SUPABASE_URL")
+    key = (
+        _secret_value("SUPABASE_SECRET_KEY")
+        or _secret_value("SUPABASE_SERVICE_ROLE_KEY")
+    )
+    if not url or not key:
+        return None
+    return create_client(url, key)
+
+
+def supabase_configured() -> bool:
+    return get_supabase_client() is not None
+
 
 # Las carpetas están ordenadas como las compartiste.
 # Las coordenadas son solo para lugares públicos que sí podemos ubicar con seguridad.
@@ -755,6 +801,125 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
   }
 }
 
+
+/* ============================================================
+   V23 — Ajustes móviles
+   Solo corrige:
+   - barra inferior horizontal en celular
+   - botones/corazones de Razones más compactos y ordenados
+   ============================================================ */
+.st-key-bottom_nav [data-testid="stHorizontalBlock"]{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-start!important;
+  gap:.18rem!important;
+}
+.st-key-bottom_nav [data-testid="column"]{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+.st-key-bottom_nav [data-testid="column"] > div{
+  width:100%!important;
+}
+.st-key-bottom_nav .stButton>button{
+  min-height:40px!important;
+  padding:.14rem .02rem!important;
+}
+.st-key-bottom_nav .stButton>button,
+.st-key-bottom_nav .stButton>button p{
+  font-size:1.12rem!important;
+  line-height:1!important;
+}
+.nav-caption{
+  display:block!important;
+  margin-top:.02rem!important;
+}
+@media(max-width:760px){
+  .st-key-bottom_nav{
+    width:100%!important;
+    padding:.28rem .14rem calc(.34rem + env(safe-area-inset-bottom))!important;
+  }
+  .st-key-bottom_nav [data-testid="stHorizontalBlock"]{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:.10rem!important;
+  }
+  .st-key-bottom_nav [data-testid="column"]{
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+  }
+  .st-key-bottom_nav .stButton>button{
+    min-height:34px!important;
+    padding:.08rem .01rem!important;
+    border-radius:12px!important;
+  }
+  .st-key-bottom_nav .stButton>button,
+  .st-key-bottom_nav .stButton>button p{
+    font-size:1rem!important;
+  }
+  .nav-caption{
+    font-size:.47rem!important;
+    line-height:1.02!important;
+    white-space:nowrap!important;
+  }
+}
+
+/* Razones: corazones compactos y orden correcto también en móvil */
+.st-key-reason_row_1 [data-testid="stHorizontalBlock"],
+.st-key-reason_row_2 [data-testid="stHorizontalBlock"]{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:.45rem!important;
+}
+.st-key-reason_row_1 [data-testid="column"],
+.st-key-reason_row_2 [data-testid="column"]{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+.st-key-reason_row_1 .stButton>button,
+.st-key-reason_row_2 .stButton>button{
+  min-height:50px!important;
+  padding:.24rem .10rem!important;
+  border-radius:999px!important;
+}
+.st-key-reason_row_1 .stButton>button,
+.st-key-reason_row_1 .stButton>button p,
+.st-key-reason_row_2 .stButton>button,
+.st-key-reason_row_2 .stButton>button p{
+  font-size:1rem!important;
+  line-height:1.05!important;
+}
+@media(max-width:760px){
+  .st-key-reason_row_1 [data-testid="stHorizontalBlock"],
+  .st-key-reason_row_2 [data-testid="stHorizontalBlock"]{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:.22rem!important;
+  }
+  .st-key-reason_row_1 [data-testid="column"],
+  .st-key-reason_row_2 [data-testid="column"]{
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+  }
+  .st-key-reason_row_1 .stButton>button,
+  .st-key-reason_row_2 .stButton>button{
+    min-height:40px!important;
+    padding:.12rem .02rem!important;
+    border-radius:999px!important;
+  }
+  .st-key-reason_row_1 .stButton>button,
+  .st-key-reason_row_1 .stButton>button p,
+  .st-key-reason_row_2 .stButton>button,
+  .st-key-reason_row_2 .stButton>button p{
+    font-size:.88rem!important;
+    line-height:1!important;
+  }
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -806,6 +971,25 @@ def relationship_snapshot(today: date | None = None) -> dict:
 
 
 def read_json(path: Path, fallback):
+    # Las respuestas de la encuesta viven en Supabase una vez configurado.
+    if path == ANSWERS_DB:
+        client = get_supabase_client()
+        if client is not None:
+            try:
+                response = (
+                    client.table(SUPABASE_ANSWERS_TABLE)
+                    .select("question_number,answer")
+                    .order("question_number")
+                    .execute()
+                )
+                return {
+                    str(row["question_number"]): row.get("answer", "")
+                    for row in (response.data or [])
+                }
+            except Exception:
+                return fallback
+
+    # Fallback local para desarrollo / configuración inicial.
     try:
         if path.exists():
             return json.loads(path.read_text(encoding="utf-8"))
@@ -815,6 +999,29 @@ def read_json(path: Path, fallback):
 
 
 def write_json(path: Path, payload) -> bool:
+    # Guardar respuestas de forma persistente en Supabase.
+    if path == ANSWERS_DB:
+        client = get_supabase_client()
+        if client is not None:
+            try:
+                rows = [
+                    {
+                        "question_number": int(number),
+                        "answer": answer,
+                        "updated_at": datetime.now().isoformat(timespec="seconds"),
+                    }
+                    for number, answer in payload.items()
+                ]
+                (
+                    client.table(SUPABASE_ANSWERS_TABLE)
+                    .upsert(rows, on_conflict="question_number")
+                    .execute()
+                )
+                return True
+            except Exception:
+                return False
+
+    # Fallback local si Supabase aún no está configurado.
     try:
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return True
@@ -870,8 +1077,15 @@ def safe_filename(name: str) -> str:
     return stem or "foto.jpg"
 
 
-def save_bb_uploads(album: str, title: str, message: str, files) -> tuple[bool, int]:
-    db = read_json(BB_MEMORY_DB, [])
+def _save_bb_uploads_local(album: str, title: str, message: str, files) -> tuple[bool, int]:
+    """Fallback local mientras se termina de configurar Supabase."""
+    db = []
+    try:
+        if BB_MEMORY_DB.exists():
+            db = json.loads(BB_MEMORY_DB.read_text(encoding="utf-8"))
+    except Exception:
+        db = []
+
     saved = 0
     try:
         for uploaded in files:
@@ -890,14 +1104,129 @@ def save_bb_uploads(album: str, title: str, message: str, files) -> tuple[bool, 
                 "created_at": datetime.now().isoformat(timespec="seconds"),
             })
             saved += 1
-        ok = write_json(BB_MEMORY_DB, db)
-        return ok, saved
+        BB_MEMORY_DB.write_text(
+            json.dumps(db, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return True, saved
     except Exception:
         return False, saved
 
 
+def save_bb_uploads(album: str, title: str, message: str, files) -> tuple[bool, int]:
+    client = get_supabase_client()
+    if client is None:
+        return _save_bb_uploads_local(album, title, message, files)
+
+    saved = 0
+    try:
+        for uploaded in files:
+            ext = Path(uploaded.name).suffix.lower()
+            if ext not in IMAGE_TYPES:
+                continue
+
+            record_id = uuid.uuid4().hex
+            filename = f"{record_id}_{safe_filename(uploaded.name)}"
+            storage_path = f"{album}/{filename}"
+            file_bytes = uploaded.getvalue()
+            content_type = (
+                getattr(uploaded, "type", None)
+                or mimetypes.guess_type(uploaded.name)[0]
+                or "application/octet-stream"
+            )
+
+            client.storage.from_(SUPABASE_BUCKET).upload(
+                path=storage_path,
+                file=file_bytes,
+                file_options={
+                    "cache-control": "3600",
+                    "content-type": content_type,
+                    "upsert": "false",
+                },
+            )
+
+            (
+                client.table(SUPABASE_MEMORIES_TABLE)
+                .insert({
+                    "id": record_id,
+                    "album": album,
+                    "title": title.strip() or "Un recuerdo de bb",
+                    "message": message.strip(),
+                    "storage_path": storage_path,
+                    "original_name": uploaded.name,
+                    "content_type": content_type,
+                })
+                .execute()
+            )
+            saved += 1
+
+        return True, saved
+    except Exception:
+        return False, saved
+
+
+def _supabase_record_to_local(client: Client, record: dict) -> dict:
+    """
+    Descarga una copia temporal privada para que el resto del diseño del álbum
+    siga funcionando exactamente igual.
+    """
+    storage_path = record.get("storage_path", "")
+    if not storage_path:
+        return record
+
+    suffix = Path(storage_path).suffix.lower() or ".jpg"
+    local_path = SUPABASE_CACHE_DIR / f"{record.get('id', uuid.uuid4().hex)}{suffix}"
+
+    try:
+        if not local_path.exists():
+            file_bytes = (
+                client.storage
+                .from_(SUPABASE_BUCKET)
+                .download(storage_path)
+            )
+            local_path.write_bytes(file_bytes)
+        result = dict(record)
+        result["file"] = str(local_path)
+        return result
+    except Exception:
+        return record
+
+
 def bb_uploads(album: str | None = None):
-    records = read_json(BB_MEMORY_DB, [])
+    client = get_supabase_client()
+
+    # Supabase es la fuente permanente una vez configurado.
+    if client is not None:
+        try:
+            query = (
+                client.table(SUPABASE_MEMORIES_TABLE)
+                .select(
+                    "id,album,title,message,storage_path,"
+                    "original_name,content_type,created_at"
+                )
+                .order("created_at")
+            )
+            if album is not None:
+                query = query.eq("album", album)
+
+            response = query.execute()
+            return [
+                _supabase_record_to_local(client, record)
+                for record in (response.data or [])
+            ]
+        except Exception:
+            return []
+
+    # Fallback local para desarrollo / antes de configurar Supabase.
+    try:
+        records = (
+            json.loads(BB_MEMORY_DB.read_text(encoding="utf-8"))
+            if BB_MEMORY_DB.exists()
+            else []
+        )
+    except Exception:
+        records = []
+
     if album is None:
         return records
     return [r for r in records if r.get("album") == album]
@@ -1067,8 +1396,13 @@ def album_media_card(path: Path, label: str):
 
 
 def album_record_path(record: dict) -> Path | None:
-    p = BASE_DIR / record.get("file", "")
-    return p if p.exists() else None
+    raw = record.get("file", "")
+    if not raw:
+        return None
+    p = Path(raw)
+    if not p.is_absolute():
+        p = BASE_DIR / p
+    return p if p.is_file() else None
 
 
 def polaroid(path: Path, caption: str):
@@ -1704,11 +2038,21 @@ if st.session_state.nav_section == "Razones":
     st.markdown('<div class="section-title">10 razones por las que amo estar contigo ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Toca un corazón bb</div>', unsafe_allow_html=True)
 
-    cols = st.columns(5)
-    for i in range(10):
-        with cols[i % 5]:
-            if st.button(f"♡ {i+1}", key=f"reason_{i}", use_container_width=True):
-                st.session_state.reason_selected = i
+    with st.container(key="reason_row_1"):
+        row1 = st.columns(5, gap="small")
+        for idx, col in enumerate(row1):
+            i = idx
+            with col:
+                if st.button(f"♡ {i+1}", key=f"reason_{i}", use_container_width=True):
+                    st.session_state.reason_selected = i
+
+    with st.container(key="reason_row_2"):
+        row2 = st.columns(5, gap="small")
+        for idx, col in enumerate(row2):
+            i = 5 + idx
+            with col:
+                if st.button(f"♡ {i+1}", key=f"reason_{i}", use_container_width=True):
+                    st.session_state.reason_selected = i
 
     if st.session_state.reason_selected is None:
         st.markdown('<div class="scrap-note"><h3>Hay 10 pequeños mensajes escondidos aquí ♡</h3><p class="center">Elige el corazón que quieras abrir primero.</p></div>', unsafe_allow_html=True)
