@@ -295,7 +295,59 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
 .simple-login-shell .stButton>button{border-radius:18px!important;min-height:50px!important;background:linear-gradient(180deg,#e9b7b0,#d89599)!important;border:1px solid rgba(187,131,135,.22)!important;box-shadow:0 10px 24px rgba(181,111,118,.14);font-family:Georgia,'Times New Roman',serif!important;font-weight:600!important;letter-spacing:.03em;}
 .simple-login-bottom{text-align:center;color:#8a776e;font-size:.92rem;line-height:1.55;padding:.9rem .55rem 0;}
 .simple-login-bottom b{color:#6a5850;font-weight:500;}
+
+
+/* ============================================================
+   NAVEGACIÓN INFERIOR MÓVIL V10
+   Solo cambia la navegación después de iniciar sesión.
+   ============================================================ */
+.st-key-bottom_nav{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:min(100%,520px);
+  z-index:9999;
+  background:rgba(255,251,247,.94);
+  border-top:1px solid rgba(154,124,103,.16);
+  box-shadow:0 -10px 30px rgba(67,45,34,.09);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  padding:.42rem .52rem calc(.40rem + env(safe-area-inset-bottom));
+}
+.st-key-bottom_nav [data-testid="stHorizontalBlock"]{gap:.14rem!important;align-items:flex-start!important;}
+.st-key-bottom_nav [data-testid="column"]{min-width:0!important;}
+.st-key-bottom_nav .stButton{margin:0!important;}
+.st-key-bottom_nav .stButton>button{
+  min-height:37px!important;
+  width:100%!important;
+  padding:.15rem!important;
+  border:none!important;
+  border-radius:13px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#89796f!important;
+  font-size:1.28rem!important;
+  font-weight:500!important;
+}
+.st-key-bottom_nav .stButton>button:hover{
+  background:rgba(221,161,166,.10)!important;
+  color:#c47f86!important;
+  box-shadow:none!important;
+}
+.nav-caption{
+  text-align:center;
+  font-size:.58rem;
+  line-height:1.05;
+  color:#9a8a81;
+  margin-top:-.22rem;
+  white-space:nowrap;
+}
+.nav-caption.active{color:#c47f86;font-weight:700;}
+.block-container{padding-bottom:7rem!important;}
+
 @media(max-width:760px){
+ .st-key-bottom_nav{width:100%;border-radius:0;padding-left:.3rem;padding-right:.3rem}.nav-caption{font-size:.56rem}.st-key-bottom_nav .stButton>button{font-size:1.23rem!important;min-height:35px!important}
  .simple-login-shell{max-width:100%}.simple-login-card{border-radius:28px;padding:12px 12px 18px}.simple-login-photo{height:328px;border-radius:24px}.simple-login-title{font-size:2.05rem}.simple-login-story{font-size:1rem}.simple-login-initials{font-size:3.45rem}.simple-login-together-chip{padding:9px 14px}.simple-login-bottom{font-size:.89rem}.login-shell{max-width:100%}.login-card{border-radius:24px;padding:18px 14px 20px}.login-title{font-size:4.1rem}.login-photo-panel{height:230px;border-radius:22px}.login-metrics{grid-template-columns:1fr 1fr;gap:8px}.login-metric{padding:12px 9px}.login-metric-big{font-size:1.35rem}.block-container{padding-left:.85rem;padding-right:.85rem}.hero{padding:34px 18px 30px;border-radius:22px}
  .metric-shell{grid-template-columns:1fr}.polaroid img{height:260px}.film-frame,.film-frame img{width:160px}.film-frame img{height:200px}
 }
@@ -622,19 +674,49 @@ live_counter_component()
 
 st.markdown('<div class="quote-strip">“No es la cantidad de tiempo, es todo lo que hemos vivido juntos.” ♡</div>', unsafe_allow_html=True)
 
-tabs = st.tabs([
-    "♡ Inicio",
-    "🎞 Álbum",
-    "📍 Mapa",
-    "💬 5 preguntas",
-    "♥ 10 razones",
-    "✉ Para ti",
-])
+if "nav_section" not in st.session_state:
+    st.session_state.nav_section = "Inicio"
+
+def _go_to_section(section_name: str):
+    st.session_state.nav_section = section_name
+
+NAV_ITEMS = [
+    ("Inicio", "⌂", "nav_inicio"),
+    ("Álbum", "▧", "nav_album"),
+    ("Mapa", "⌖", "nav_mapa"),
+    ("Preguntas", "?", "nav_preguntas"),
+    ("Razones", "♡", "nav_razones"),
+    ("Carta", "✉", "nav_carta"),
+]
+
+with st.container(key="bottom_nav"):
+    nav_cols = st.columns(6, gap="small")
+    for col, (section_name, icon, button_key) in zip(nav_cols, NAV_ITEMS):
+        with col:
+            st.button(
+                icon,
+                key=button_key,
+                use_container_width=True,
+                on_click=_go_to_section,
+                args=(section_name,),
+                help=section_name,
+            )
+            active_class = " active" if st.session_state.nav_section == section_name else ""
+            st.markdown(
+                f'<div class="nav-caption{active_class}">{section_name}</div>',
+                unsafe_allow_html=True,
+            )
+
+_active_key = next(item[2] for item in NAV_ITEMS if item[0] == st.session_state.nav_section)
+st.markdown(
+    "<style>.st-key-" + _active_key + " .stButton>button{color:#c47f86!important;background:rgba(221,161,166,.11)!important;}</style>",
+    unsafe_allow_html=True,
+)
 
 # ------------------------------------------------------------
 # INICIO
 # ------------------------------------------------------------
-with tabs[0]:
+if st.session_state.nav_section == "Inicio":
     st.markdown('<div class="section-title">Nuestro rollo fotográfico</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Deslízalo: cada cuadro es una salida, un viaje o un momento que ya forma parte de nosotros.</div>', unsafe_allow_html=True)
     render_film_roll()
@@ -670,7 +752,7 @@ with tabs[0]:
 # ------------------------------------------------------------
 # ALBUM
 # ------------------------------------------------------------
-with tabs[1]:
+if st.session_state.nav_section == "Álbum":
     st.markdown('<div class="section-title">Nuestro álbum ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Cada lugar tiene su propia pequeña historia. Abre los recuerdos y recórrelos a tu ritmo.</div>', unsafe_allow_html=True)
 
@@ -751,7 +833,7 @@ with tabs[1]:
 # ------------------------------------------------------------
 # MAPA
 # ------------------------------------------------------------
-with tabs[2]:
+if st.session_state.nav_section == "Mapa":
     st.markdown('<div class="section-title">Nuestro mapa de recuerdos 📍</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Cada punto es una historia que ya podemos volver a visitar. Los lugares privados no aparecen por ubicación.</div>', unsafe_allow_html=True)
 
@@ -786,7 +868,7 @@ with tabs[2]:
 # ------------------------------------------------------------
 # 5 PREGUNTAS
 # ------------------------------------------------------------
-with tabs[3]:
+if st.session_state.nav_section == "Preguntas":
     st.markdown(f'<div class="section-title">5 preguntas para ti, {BB} ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">No es un examen. Solo quiero saber cómo se ve nuestra historia desde tus ojos.</div>', unsafe_allow_html=True)
 
@@ -815,7 +897,7 @@ with tabs[3]:
 # ------------------------------------------------------------
 # 10 RAZONES
 # ------------------------------------------------------------
-with tabs[4]:
+if st.session_state.nav_section == "Razones":
     st.markdown('<div class="section-title">10 razones por las que amo estar contigo ♡</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="section-sub">Toca un corazón, {BB}. No quiero que las leas todas de golpe.</div>', unsafe_allow_html=True)
 
@@ -842,7 +924,7 @@ with tabs[4]:
 # ------------------------------------------------------------
 # CARTA
 # ------------------------------------------------------------
-with tabs[5]:
+if st.session_state.nav_section == "Carta":
     st.markdown(f'<div class="section-title">Para ti, {BB} ♡</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Una última página antes de seguir escribiendo las siguientes.</div>', unsafe_allow_html=True)
 
