@@ -1589,7 +1589,11 @@ if st.session_state.nav_section == "Mapa":
         chosen = next((m for m in mapped if m["slug"] == selected_slug), None)
 
         if chosen:
-            photos = album_photos_for_moment(chosen)
+            if chosen["slug"] == "10_golden":
+                golden_map_photo = ASSETS_DIR / "map" / "golden.jpg"
+                photos = [golden_map_photo] if golden_map_photo.exists() else []
+            else:
+                photos = album_photos_for_moment(chosen)
 
             if photos:
                 photo_cols = st.columns(2, gap="small")
