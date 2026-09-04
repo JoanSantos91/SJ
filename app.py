@@ -298,8 +298,8 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
 
 
 /* ============================================================
-   NAVEGACIÓN INFERIOR MÓVIL V10
-   Solo cambia la navegación después de iniciar sesión.
+   NAVEGACIÓN INFERIOR MÓVIL V11
+   Solo mejora visualmente los íconos inferiores.
    ============================================================ */
 .st-key-bottom_nav{
   position:fixed;
@@ -313,38 +313,64 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
   box-shadow:0 -10px 30px rgba(67,45,34,.09);
   backdrop-filter:blur(18px);
   -webkit-backdrop-filter:blur(18px);
-  padding:.42rem .52rem calc(.40rem + env(safe-area-inset-bottom));
+  padding:.45rem .52rem calc(.45rem + env(safe-area-inset-bottom));
 }
-.st-key-bottom_nav [data-testid="stHorizontalBlock"]{gap:.14rem!important;align-items:flex-start!important;}
+.st-key-bottom_nav [data-testid="stHorizontalBlock"]{gap:.20rem!important;align-items:flex-start!important;}
 .st-key-bottom_nav [data-testid="column"]{min-width:0!important;}
 .st-key-bottom_nav .stButton{margin:0!important;}
 .st-key-bottom_nav .stButton>button{
-  min-height:37px!important;
+  position:relative!important;
+  min-height:44px!important;
   width:100%!important;
-  padding:.15rem!important;
+  padding:.18rem!important;
   border:none!important;
-  border-radius:13px!important;
+  border-radius:16px!important;
   background:transparent!important;
   box-shadow:none!important;
-  color:#89796f!important;
-  font-size:1.28rem!important;
-  font-weight:500!important;
+  color:transparent!important;
+  font-size:0!important;
+}
+.st-key-bottom_nav .stButton>button::before{
+  content:"";
+  display:block;
+  width:22px;
+  height:22px;
+  margin:0 auto;
+  opacity:.82;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:22px 22px;
 }
 .st-key-bottom_nav .stButton>button:hover{
   background:rgba(221,161,166,.10)!important;
-  color:#c47f86!important;
   box-shadow:none!important;
 }
 .nav-caption{
   text-align:center;
   font-size:.58rem;
-  line-height:1.05;
+  line-height:1.08;
   color:#9a8a81;
-  margin-top:-.22rem;
+  margin-top:-.08rem;
   white-space:nowrap;
 }
 .nav-caption.active{color:#c47f86;font-weight:700;}
 .block-container{padding-bottom:7rem!important;}
+
+/* iconos más bonitos */
+.st-key-nav_inicio .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7b73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10.5 12 3l9 7.5'/><path d='M5.5 9.5V20h13V9.5'/><path d='M9.5 20v-5.8h5V20'/></svg>");}
+.st-key-nav_album .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7b73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5' width='17' height='15' rx='3'/><path d='M7.5 15.2 10.1 12.6 12.8 15.3 16.7 11.5 20.5 15.3'/><circle cx='9' cy='9.2' r='1.4'/></svg>");}
+.st-key-nav_mapa .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7b73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21s6-5.6 6-11a6 6 0 1 0-12 0c0 5.4 6 11 6 11Z'/><circle cx='12' cy='10' r='2.2'/></svg>");}
+.st-key-nav_preguntas .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7b73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M9.3 9a2.7 2.7 0 1 1 4.4 2.1c-1 .8-1.7 1.4-1.7 2.9'/><circle cx='12' cy='17.6' r='0.8'/><circle cx='12' cy='12' r='9'/></svg>");}
+.st-key-nav_razones .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238a7b73' stroke='none'><path d='M12 20.6s-7.1-4.4-9.2-8.4C1 8.7 3.5 5 7.3 5c2 0 3.4 1.1 4.7 2.8C13.3 6.1 14.7 5 16.7 5 20.5 5 23 8.7 21.2 12.2 19.1 16.2 12 20.6 12 20.6z'/></svg>");}
+.st-key-nav_carta .stButton>button::before{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7b73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='6' width='17' height='12' rx='2.5'/><path d='m5.5 8.5 6.5 5 6.5-5'/></svg>");}
+
+/* estado activo */
+.st-key-nav_inicio .stButton>button:hover::before,
+.st-key-nav_album .stButton>button:hover::before,
+.st-key-nav_mapa .stButton>button:hover::before,
+.st-key-nav_preguntas .stButton>button:hover::before,
+.st-key-nav_razones .stButton>button:hover::before,
+.st-key-nav_carta .stButton>button:hover::before{opacity:1;filter:brightness(0) saturate(100%) invert(64%) sepia(18%) saturate(936%) hue-rotate(304deg) brightness(92%) contrast(87%);} 
 
 @media(max-width:760px){
  .st-key-bottom_nav{width:100%;border-radius:0;padding-left:.3rem;padding-right:.3rem}.nav-caption{font-size:.56rem}.st-key-bottom_nav .stButton>button{font-size:1.23rem!important;min-height:35px!important}
@@ -681,12 +707,12 @@ def _go_to_section(section_name: str):
     st.session_state.nav_section = section_name
 
 NAV_ITEMS = [
-    ("Inicio", "⌂", "nav_inicio"),
-    ("Álbum", "▧", "nav_album"),
-    ("Mapa", "⌖", "nav_mapa"),
-    ("Preguntas", "?", "nav_preguntas"),
-    ("Razones", "♡", "nav_razones"),
-    ("Carta", "✉", "nav_carta"),
+    ("Inicio", " ", "nav_inicio"),
+    ("Álbum", " ", "nav_album"),
+    ("Mapa", " ", "nav_mapa"),
+    ("Preguntas", " ", "nav_preguntas"),
+    ("Razones", " ", "nav_razones"),
+    ("Carta", " ", "nav_carta"),
 ]
 
 with st.container(key="bottom_nav"):
@@ -709,7 +735,8 @@ with st.container(key="bottom_nav"):
 
 _active_key = next(item[2] for item in NAV_ITEMS if item[0] == st.session_state.nav_section)
 st.markdown(
-    "<style>.st-key-" + _active_key + " .stButton>button{color:#c47f86!important;background:rgba(221,161,166,.11)!important;}</style>",
+    "<style>.st-key-" + _active_key + " .stButton>button{background:rgba(221,161,166,.11)!important;}"
+    + ".st-key-" + _active_key + " .stButton>button::before{opacity:1;filter:brightness(0) saturate(100%) invert(64%) sepia(18%) saturate(936%) hue-rotate(304deg) brightness(92%) contrast(87%);}</style>",
     unsafe_allow_html=True,
 )
 
