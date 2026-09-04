@@ -707,6 +707,54 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
  .simple-login-shell{max-width:100%}.simple-login-card{border-radius:28px;padding:12px 12px 18px}.simple-login-photo{height:328px;border-radius:24px}.simple-login-title{font-size:2.05rem}.simple-login-story{font-size:1rem}.simple-login-initials{font-size:3.45rem}.simple-login-together-chip{padding:9px 14px}.simple-login-bottom{font-size:.89rem}.login-shell{max-width:100%}.login-card{border-radius:24px;padding:18px 14px 20px}.login-title{font-size:4.1rem}.login-photo-panel{height:230px;border-radius:22px}.login-metrics{grid-template-columns:1fr 1fr;gap:8px}.login-metric{padding:12px 9px}.login-metric-big{font-size:1.35rem}.block-container{padding-left:.85rem;padding-right:.85rem}.hero{padding:34px 18px 30px;border-radius:22px}
  .metric-shell{grid-template-columns:1fr}.polaroid img{height:260px}.film-frame,.film-frame img{width:160px}.film-frame img{height:200px}
 }
+
+/* CARTA V22 — formato más cómodo para celular */
+.carta-letter-card,
+.carta-next-card{
+  width:min(100%, 620px);
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+.carta-letter-card{
+  padding:1.3rem 1.15rem!important;
+  line-height:1.72!important;
+}
+
+.carta-letter-card p{
+  max-width:48ch;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.carta-next-card{
+  padding:1.1rem 1rem!important;
+}
+
+@media(max-width:760px){
+  .carta-letter-card,
+  .carta-next-card{
+    width:100%!important;
+    max-width:430px!important;
+  }
+
+  .carta-letter-card{
+    padding:1.05rem .9rem!important;
+    border-radius:18px!important;
+  }
+
+  .carta-letter-card p{
+    max-width:34ch!important;
+    font-size:.96rem!important;
+    line-height:1.68!important;
+  }
+
+  .carta-next-card{
+    padding:1rem .85rem!important;
+    border-radius:18px!important;
+  }
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -1685,7 +1733,7 @@ if st.session_state.nav_section == "Carta":
 
     st.markdown(
         f"""
-        <div class="scrap-note">
+        <div class="scrap-note carta-letter-card">
           <h3>Mi bb,</h3>
           <p>Quise hacer esto porque seis meses pueden parecer solo una fecha, pero cuando pienso en todo lo que hemos vivido dentro de ese tiempo, para mí significa muchísimo más.</p>
           <p>Me gustan nuestros viajes y nuestras salidas, pero también me gustan los momentos normales: comer juntos, platicar, reírnos, estar cansados y aun así querer compartir el rato.</p>
@@ -1699,7 +1747,7 @@ if st.session_state.nav_section == "Carta":
     st.write("")
     st.markdown(
         """
-        <div class="paper-card center">
+        <div class="paper-card center carta-next-card">
           <h3>Nuestro próximo capítulo</h3>
           <p>13 de septiembre de 2026 · 6 meses juntos ♡</p>
           <p class="small">Y después… otro mes, otro viaje, otra foto, otra historia.</p>
