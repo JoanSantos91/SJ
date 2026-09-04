@@ -920,6 +920,112 @@ div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {bo
   }
 }
 
+
+/* ============================================================
+   V24 — correcciones exclusivas de visualización móvil
+   ============================================================ */
+
+/* Fecha: Día / Mes / Año siempre uno al lado del otro */
+.st-key-login_date_row div[data-testid="stHorizontalBlock"]{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  gap:.45rem!important;
+  align-items:flex-start!important;
+}
+.st-key-login_date_row div[data-testid="stColumn"]{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+.st-key-login_date_row div[data-testid="stColumn"]:nth-child(3){
+  flex:1.15 1 0!important;
+}
+.st-key-login_date_row .simple-login-labels{
+  grid-template-columns:1fr 1fr 1.15fr!important;
+}
+
+/* Barra inferior: las 6 opciones permanecen en una sola fila */
+.st-key-bottom_nav div[data-testid="stHorizontalBlock"]{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  gap:.08rem!important;
+  align-items:flex-start!important;
+}
+.st-key-bottom_nav div[data-testid="stColumn"]{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+.st-key-bottom_nav div[data-testid="stColumn"] > div{
+  width:100%!important;
+  min-width:0!important;
+}
+
+@media(max-width:760px){
+  .st-key-login_date_row div[data-testid="stHorizontalBlock"]{
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    gap:.38rem!important;
+  }
+  .st-key-login_date_row div[data-testid="stColumn"]{
+    width:0!important;
+    min-width:0!important;
+    flex:1 1 0!important;
+  }
+  .st-key-login_date_row div[data-testid="stColumn"]:nth-child(3){
+    flex:1.15 1 0!important;
+  }
+  .st-key-login_date_row [data-testid="stTextInput"]{
+    width:100%!important;
+    min-width:0!important;
+  }
+  .st-key-login_date_row [data-testid="stTextInput"] input{
+    width:100%!important;
+    min-width:0!important;
+    padding-left:.28rem!important;
+    padding-right:.28rem!important;
+  }
+
+  .st-key-bottom_nav{
+    width:100%!important;
+    max-width:100%!important;
+    padding:.24rem .10rem calc(.28rem + env(safe-area-inset-bottom))!important;
+  }
+  .st-key-bottom_nav div[data-testid="stHorizontalBlock"]{
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    gap:.05rem!important;
+  }
+  .st-key-bottom_nav div[data-testid="stColumn"]{
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+  }
+  .st-key-bottom_nav .stButton>button{
+    width:100%!important;
+    min-width:0!important;
+    min-height:33px!important;
+    padding:.05rem 0!important;
+    border-radius:10px!important;
+  }
+  .st-key-bottom_nav .stButton>button,
+  .st-key-bottom_nav .stButton>button p{
+    font-size:.95rem!important;
+    line-height:1!important;
+  }
+  .st-key-bottom_nav .nav-caption{
+    font-size:.44rem!important;
+    line-height:1!important;
+    margin-top:0!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    white-space:nowrap!important;
+  }
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -1450,7 +1556,13 @@ def live_counter_component():
           .metric-shell{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
           .metric-card{box-sizing:border-box;background:linear-gradient(180deg,#fffaf5,#f1e2d7);border:1px solid rgba(216,146,150,.24);border-radius:22px;padding:22px 16px;text-align:center;min-height:145px}
           .metric-big{font:500 clamp(2.1rem,5vw,3.7rem)/1 Georgia,serif;color:#8c5f58}.metric-label{margin-top:.5rem;color:#756861;font-size:.92rem}.metric-mini{margin-top:.55rem;color:#aa7973;font-size:.82rem}
-          @media(max-width:650px){.metric-shell{grid-template-columns:1fr}.metric-card{min-height:125px}}
+          @media(max-width:650px){
+            .metric-shell{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+            .metric-card{min-height:145px;padding:15px 6px;border-radius:17px}
+            .metric-big{font-size:1.65rem}
+            .metric-label{font-size:.70rem;line-height:1.18;margin-top:.42rem}
+            .metric-mini{font-size:.58rem;line-height:1.28;margin-top:.42rem}
+          }
         </style>
         <script>
         const start = new Date(2026, 2, 13, 0, 0, 0);
@@ -1544,15 +1656,16 @@ if not st.session_state.unlocked:
         )
 
         st.markdown('<div class="simple-login-inputs">', unsafe_allow_html=True)
-        dcol, mcol, ycol = st.columns([1, 1, 1.15], gap="small")
-        with dcol:
-            code_day = st.text_input("Día", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_day")
-        with mcol:
-            code_month = st.text_input("Mes", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_month")
-        with ycol:
-            code_year = st.text_input("Año", value="", placeholder="", max_chars=4, label_visibility="collapsed", key="login_year")
+        with st.container(key="login_date_row"):
+            dcol, mcol, ycol = st.columns([1, 1, 1.15], gap="small")
+            with dcol:
+                code_day = st.text_input("Día", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_day")
+            with mcol:
+                code_month = st.text_input("Mes", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_month")
+            with ycol:
+                code_year = st.text_input("Año", value="", placeholder="", max_chars=4, label_visibility="collapsed", key="login_year")
 
-        st.markdown('<div class="simple-login-labels"><div>Día</div><div>Mes</div><div>Año</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="simple-login-labels"><div>Día</div><div>Mes</div><div>Año</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if st.button("Comenzar", use_container_width=True):
