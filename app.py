@@ -451,6 +451,7 @@ def preferred_roll_path(moment: dict) -> Path | None:
     custom = {
         "06_estes_park": ["photo_02.jpg", "photo_01.jpg", "photo_03.jpg", "photo_04.jpg", "cover.jpg"],
         "07_black_hawk": ["photo_02.jpg", "photo_01.jpg", "cover.jpg"],
+        "10_golden": ["photo_01.jpg", "cover.jpg"],
     }
     names = custom.get(moment["slug"], ["cover.jpg"])
     for name in names:
