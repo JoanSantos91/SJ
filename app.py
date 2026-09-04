@@ -1601,6 +1601,12 @@ if st.session_state.nav_section == "Mapa":
                         with photo_cols[i % 2]:
                             st.image(str(photo), use_container_width=True)
 
+            # Igual que en el Álbum: si este recuerdo tiene videos, se muestran y se pueden reproducir.
+            _, videos = media_for_moment(chosen)
+            if videos:
+                for video in videos:
+                    st.video(str(video))
+
     st.markdown(
         """
         <div class="map-future-card">
