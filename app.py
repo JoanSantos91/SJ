@@ -6,16 +6,15 @@ import json
 import re
 import uuid
 from datetime import date, datetime
-from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image, ImageOps
 
 # ============================================================
-# S & J — NUESTRA HISTORIA
-# Versión móvil, pensada primero para celular.
+# S & J — App de 6 meses
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -35,6 +34,9 @@ RELATIONSHIP_START = date(2026, 3, 13)
 SIX_MONTH_DATE = date(2026, 9, 13)
 ACCESS_CODE = "13032026"
 
+# Las carpetas están ordenadas como las compartiste.
+# Las coordenadas son solo para lugares públicos que sí podemos ubicar con seguridad.
+# Los lugares privados se dejan fuera del mapa.
 MOMENTS = [
     {
         "slug": "01_long_lake",
@@ -43,6 +45,7 @@ MOMENTS = [
         "category": "Aventura",
         "phrase": "Entre montañas y agua, cualquier camino se disfruta más contigo.",
         "coords": (40.078, -105.584),
+        "map_note": "Ubicación aproximada del área de Long Lake.",
     },
     {
         "slug": "02_silver_plume",
@@ -67,6 +70,7 @@ MOMENTS = [
         "category": "Salida",
         "phrase": "Competencia, risas y otro plan que terminó siendo de mis favoritos contigo.",
         "coords": None,
+        "map_note": "Dime después cuál TopGolf fue y lo ponemos exacto en el mapa.",
     },
     {
         "slug": "05_primera_salida",
@@ -75,6 +79,7 @@ MOMENTS = [
         "category": "Nosotros",
         "phrase": "La primera salida con un nombre nuevo para lo nuestro: novios. ♡",
         "coords": None,
+        "map_note": "Cuando me digas el lugar, lo agregamos al mapa.",
     },
     {
         "slug": "06_estes_park",
@@ -97,8 +102,9 @@ MOMENTS = [
         "title": "Comida en tu depa",
         "short": "En casa",
         "category": "Momentos simples",
-        "phrase": "También amo esto: comer contigo, platicar y hacer especial un momento sencillo.",
+        "phrase": "También amo esto: comer contigo, platicar y sentir que cualquier momento sencillo puede volverse especial.",
         "coords": None,
+        "map_note": "Este recuerdo se queda privado, sin ubicación en el mapa. ♡",
     },
     {
         "slug": "09_vegas",
@@ -140,209 +146,163 @@ REASONS = [
 ]
 
 # ============================================================
-# PAGE
+# PAGE + CSS
 # ============================================================
 
 st.set_page_config(
-    page_title="S & J · Nuestra historia",
+    page_title="S & J · Nuestros 6 meses",
     page_icon="♡",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-CSS = r"""
+st.markdown(
+    """
 <style>
-:root{
-  --paper:#fbf6ef;
-  --paper2:#f3e8dc;
-  --ink:#3a302c;
-  --muted:#81736d;
-  --rose:#ca8588;
-  --rose-soft:#efd7d4;
-  --rose-pale:#f7e9e6;
-  --gold:#b8925b;
-  --line:rgba(83,61,47,.11);
+:root {
+    --paper:#fbf5ed;
+    --paper2:#f2e5d8;
+    --ink:#322925;
+    --muted:#7c7068;
+    --rose:#d89296;
+    --rose2:#efd1cf;
+    --gold:#bd9454;
+    --black:#10100f;
 }
-
-html, body, [data-testid="stAppViewContainer"]{
-  background:
-    radial-gradient(circle at 12% 7%, rgba(207,137,141,.08), transparent 25%),
-    radial-gradient(circle at 91% 14%, rgba(184,146,91,.07), transparent 22%),
-    linear-gradient(180deg,#fdf9f4 0%,#f7eee5 100%);
-  color:var(--ink);
+html, body, [data-testid="stAppViewContainer"] {
+    background:
+      radial-gradient(circle at 12% 6%, rgba(217,146,150,.11), transparent 26%),
+      radial-gradient(circle at 90% 10%, rgba(189,148,84,.08), transparent 24%),
+      linear-gradient(180deg,#fcf8f3 0%,#f5eadf 100%);
+    color:var(--ink);
 }
-[data-testid="stHeader"]{background:transparent;height:0;}
-[data-testid="stToolbar"]{display:none;}
-[data-testid="stDecoration"]{display:none;}
-[data-testid="stSidebar"]{display:none;}
+[data-testid="stHeader"] {background:transparent;}
+.block-container {max-width:1180px;padding-top:1rem;padding-bottom:4rem;}
+h1,h2,h3 {font-family:Georgia,'Times New Roman',serif!important;}
 
-.block-container{
-  max-width:440px !important;
-  padding:12px 14px 112px !important;
-  margin:0 auto;
+.hero {
+  position:relative; overflow:hidden; border-radius:30px; padding:46px 32px 40px;
+  background:linear-gradient(145deg,#0c0c0b,#1a1714 70%,#201a15);
+  color:#f8eee1; border:1px solid rgba(189,148,84,.34);
+  box-shadow:0 24px 60px rgba(63,42,30,.18);
 }
+.hero:after {content:"";position:absolute;width:480px;height:480px;border-radius:50%;right:-180px;top:-280px;background:radial-gradient(circle,rgba(189,148,84,.22),transparent 66%);}
+.hero-kicker {position:relative;text-align:center;color:#d3ad72;letter-spacing:.28em;text-transform:uppercase;font-size:.76rem;z-index:1;}
+.hero-title {position:relative;text-align:center;font:500 clamp(3.4rem,8vw,7rem)/1 Georgia,serif;z-index:1;margin:.4rem 0 .6rem;}
+.hero-sub {position:relative;text-align:center;color:#d6c8bb;max-width:690px;margin:auto;z-index:1;line-height:1.7;}
+.hero-heart {position:relative;z-index:1;text-align:center;color:#d3ad72;font-size:1.8rem;margin-top:14px;}
 
-h1,h2,h3{
-  font-family:"Iowan Old Style","Baskerville","Palatino Linotype",Georgia,serif !important;
-}
-p,div,label,button,input,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.paper-card {background:rgba(255,252,248,.93);border:1px solid rgba(102,75,57,.11);border-radius:22px;padding:22px;box-shadow:0 10px 30px rgba(76,54,39,.07);}
+.scrap-note {background:#f1d6d2;border-radius:7px;padding:20px;box-shadow:0 8px 18px rgba(75,49,40,.09);transform:rotate(-.35deg);}
+.scrap-note h3 {margin-top:0;text-align:center;}
+.section-title {font:500 2.15rem Georgia,serif;margin:.5rem 0 .15rem;}
+.section-sub {color:var(--muted);margin-bottom:1.3rem;}
 
-/* ---------- tipografía / encabezados ---------- */
-.brand-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 10px;}
-.brand-script{
-  font-family:"Snell Roundhand","Apple Chancery","Segoe Script","Brush Script MT",cursive;
-  font-size:2.15rem;color:#463936;line-height:1;
-}
-.brand-heart{font-size:1.4rem;color:var(--rose);}
-.eyebrow{font-size:.69rem;letter-spacing:.19em;text-transform:uppercase;color:#a07f6d;margin-bottom:5px;}
-.page-title{font-family:"Iowan Old Style","Baskerville",Georgia,serif;font-size:2rem;line-height:1.05;color:#40332f;margin-bottom:5px;}
-.page-sub{font-size:.89rem;line-height:1.55;color:var(--muted);margin-bottom:17px;}
-.script-title{
-  font-family:"Snell Roundhand","Apple Chancery","Segoe Script","Brush Script MT",cursive;
-  font-size:2rem;line-height:1.05;color:#5d4542;margin-bottom:5px;
-}
+.metric-shell {display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 8px;}
+.metric-card {background:linear-gradient(180deg,#fffaf5,#f1e2d7);border:1px solid rgba(216,146,150,.22);border-radius:22px;padding:22px 16px;text-align:center;min-height:145px;}
+.metric-big {font:500 clamp(2.2rem,5vw,4rem)/1 Georgia,serif;color:#8c5f58;}
+.metric-label {margin-top:.5rem;color:#756861;font-size:.92rem;}
+.metric-mini {margin-top:.5rem;color:#aa7973;font-size:.82rem;}
 
-/* ---------- portada home ---------- */
-.home-cover{position:relative;height:218px;border-radius:24px;overflow:hidden;background:#171310;box-shadow:0 13px 34px rgba(74,49,36,.12);margin-bottom:14px;}
-.home-cover img{width:100%;height:100%;object-fit:cover;object-position:center 43%;filter:brightness(.60) saturate(.78);transform:scale(1.01);}
-.home-cover:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.08) 38%,rgba(0,0,0,.57) 100%);}
-.home-cover-copy{position:absolute;z-index:2;left:20px;right:20px;bottom:16px;color:#fff8ef;}
-.home-date{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;opacity:.82;margin-bottom:3px;}
-.home-cover-title{font-family:"Snell Roundhand","Apple Chancery","Segoe Script",cursive;font-size:2rem;line-height:1.05;}
-.home-cover-sub{font-family:Georgia,serif;font-size:.85rem;opacity:.88;margin-top:4px;}
+.film-wrap {overflow-x:auto;padding:12px 4px 20px;scroll-snap-type:x mandatory;}
+.film-roll {display:flex;gap:0;background:#111;padding:16px 10px;border-radius:16px;width:max-content;min-width:100%;box-shadow:0 12px 32px rgba(0,0,0,.17);}
+.film-frame {width:190px;margin:0 8px;scroll-snap-align:start;}
+.film-holes {height:9px;background:repeating-linear-gradient(90deg,#c59a55 0 9px,transparent 9px 18px);opacity:.7;margin:0 0 8px;}
+.film-frame img {width:190px;height:225px;object-fit:cover;border:5px solid #1d1d1d;display:block;}
+.film-caption {color:#e9d4b2;text-align:center;font-size:.78rem;padding:8px 4px 2px;white-space:normal;}
 
-/* ---------- contador ---------- */
-.counter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 18px;}
-.counter-card{background:rgba(255,252,247,.88);border:1px solid var(--line);border-radius:17px;padding:13px 6px 11px;text-align:center;box-shadow:0 7px 22px rgba(79,55,40,.05);}
-.counter-num{font-family:"Iowan Old Style",Georgia,serif;color:#9e6565;font-size:1.8rem;line-height:1;}
-.counter-label{color:#817069;font-size:.66rem;margin-top:5px;line-height:1.25;}
-.counter-small{color:#b27d7a;font-size:.62rem;margin-top:4px;line-height:1.2;}
+.polaroid {background:#fffdf9;border:1px solid rgba(0,0,0,.06);padding:10px 10px 23px;border-radius:5px;box-shadow:0 10px 28px rgba(56,39,28,.14);margin:8px 0 16px;}
+.polaroid img {width:100%;height:300px;object-fit:cover;display:block;border-radius:2px;}
+.polaroid-caption {padding:11px 5px 0;text-align:center;font:500 .98rem Georgia,serif;color:#574943;}
 
-/* ---------- paper cards ---------- */
-.paper-card{background:rgba(255,252,248,.90);border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(76,54,41,.05);margin:10px 0;}
-.soft-note{background:#f3dedb;border-radius:15px;padding:17px;color:#584541;margin:10px 0;}
-.soft-note-title{font-family:"Snell Roundhand","Segoe Script",cursive;font-size:1.55rem;margin-bottom:5px;}
-.small-muted{font-size:.78rem;color:var(--muted);line-height:1.5;}
-.quote{font-family:Georgia,serif;font-style:italic;color:#765d57;font-size:.96rem;line-height:1.6;}
+.location-card {background:#fffaf6;border:1px solid rgba(189,148,84,.18);border-radius:20px;padding:18px;margin-bottom:12px;}
+.location-title {font:500 1.3rem Georgia,serif;}
+.location-category {display:inline-block;color:#a56f6f;background:#f3dcd9;border-radius:999px;padding:4px 10px;font-size:.73rem;margin:.4rem 0;}
+.location-phrase {color:#6d6059;font-style:italic;line-height:1.6;}
 
-/* ---------- film roll ---------- */
-.film-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:7px 0 13px;}
-.film-scroll::-webkit-scrollbar{display:none;}
-.film-roll{display:flex;gap:0;background:#171513;border-radius:13px;padding:10px 8px;width:max-content;box-shadow:0 9px 23px rgba(0,0,0,.12);}
-.film-frame{width:126px;margin:0 5px;flex:0 0 auto;}
-.film-holes{height:6px;background:repeating-linear-gradient(90deg,#c79e5e 0 6px,transparent 6px 12px);opacity:.66;margin-bottom:6px;}
-.film-frame img{width:126px;height:154px;object-fit:cover;display:block;border:4px solid #27231f;border-radius:2px;}
-.film-caption{color:#ead9bd;text-align:center;font-family:Georgia,serif;font-size:.69rem;padding:6px 3px 1px;}
+.question-num {width:38px;height:38px;border-radius:50%;background:#ecd2cf;color:#8f5f5d;display:flex;align-items:center;justify-content:center;font:500 1.1rem Georgia,serif;margin-bottom:8px;}
+.reason-card {background:#fffaf6;border:1px solid rgba(189,148,84,.2);border-radius:19px;padding:18px;margin:8px 0;}
+.reason-num {font:500 1.45rem Georgia,serif;color:#b17875;}
+.reason-text {color:#50433f;line-height:1.6;margin-top:5px;}
+.quote-strip {text-align:center;padding:24px 12px;font:italic 1.2rem Georgia,serif;color:#755b55;}
 
-/* ---------- polaroids ---------- */
-.polaroid{background:#fffdf8;border:1px solid rgba(0,0,0,.05);padding:8px 8px 19px;border-radius:5px;box-shadow:0 9px 24px rgba(66,47,35,.12);margin:8px 0 15px;}
-.polaroid img{width:100%;height:235px;object-fit:cover;display:block;border-radius:2px;}
-.polaroid-caption{text-align:center;padding:9px 4px 0;font-family:"Snell Roundhand","Segoe Script",cursive;font-size:1.05rem;color:#604a44;}
+.stButton>button {border-radius:999px!important;border:1px solid rgba(158,108,91,.18)!important;background:linear-gradient(180deg,#da9b9b,#c97f83)!important;color:white!important;font-weight:650!important;min-height:42px;}
+.stButton>button:hover {box-shadow:0 7px 20px rgba(168,101,103,.17);border-color:#b17072!important;}
+div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {border-radius:14px!important;}
+[data-baseweb="tab-list"] {gap:6px;background:rgba(255,251,247,.72);padding:6px;border-radius:18px;overflow-x:auto;}
+[data-baseweb="tab"] {border-radius:13px;padding:9px 12px;white-space:nowrap;}
+.small {font-size:.82rem;color:#81736b;}
+.center {text-align:center;}
 
-/* ---------- album / cards ---------- */
-.memory-head{background:linear-gradient(145deg,#fffaf5,#f4e7dc);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;}
-.memory-category{display:inline-block;padding:4px 9px;border-radius:999px;background:#f0d8d5;color:#9b6666;font-size:.65rem;margin:4px 0 7px;}
-.memory-title{font-family:"Iowan Old Style",Georgia,serif;font-size:1.2rem;color:#493a35;}
-.memory-phrase{font-family:Georgia,serif;font-style:italic;font-size:.86rem;line-height:1.5;color:#71615b;margin-top:3px;}
 
-/* ---------- reasons ---------- */
-.reason-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0 17px;}
-.reason-pill{aspect-ratio:1;border-radius:50%;background:#f2d9d6;border:1px solid rgba(174,110,112,.18);display:flex;align-items:center;justify-content:center;color:#a56d6d;font-family:Georgia,serif;font-size:.85rem;}
-.reason-card{background:#fffaf5;border:1px solid rgba(185,146,91,.18);border-radius:18px;padding:16px;margin:9px 0;}
-.reason-number{font-family:Georgia,serif;color:#b57676;font-size:1.22rem;margin-bottom:4px;}
-.reason-text{font-size:.87rem;line-height:1.55;color:#584a45;}
 
-/* ---------- questions ---------- */
-.q-number{width:34px;height:34px;border-radius:50%;background:#ecd1cf;display:flex;align-items:center;justify-content:center;color:#9e6666;font-family:Georgia,serif;margin-bottom:7px;}
-.q-title{font-family:Georgia,serif;font-size:1rem;line-height:1.45;color:#493d38;margin-bottom:7px;}
+.login-shell{max-width:470px;margin:0 auto 1.2rem;}
+.login-card{position:relative;overflow:hidden;border-radius:30px;background:linear-gradient(180deg,#fffdf9 0%,#f7ede3 100%);border:1px solid rgba(144,107,91,.12);box-shadow:0 18px 48px rgba(70,46,35,.12);padding:22px 18px 22px;}
+.login-date-top{text-align:center;color:#ab7a75;letter-spacing:.28em;text-transform:uppercase;font-size:.74rem;margin-top:2px;}
+.login-title{font-family:"Snell Roundhand","Apple Chancery","Brush Script MT","Segoe Script",cursive!important;text-align:center;font-size:clamp(3.6rem,10vw,5.4rem);line-height:.92;color:#40302c;margin:.35rem 0 0;}
+.login-heart{text-align:center;color:#d68f99;font-size:1.08rem;line-height:1;margin:.25rem 0;}
+.login-subtitle{text-align:center;font-family:Georgia,'Times New Roman',serif;color:#66534d;font-size:1.12rem;margin-bottom:1rem;}
+.login-photo-panel{position:relative;height:250px;border-radius:24px;overflow:hidden;margin:0 auto 1rem;background:#e8ddd2;border:1px solid rgba(120,88,72,.08);}
+.login-photo-panel img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block;filter:saturate(.82) brightness(.60) blur(.2px);transform:scale(1.02);}
+.login-photo-panel:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,250,245,.10) 0%,rgba(20,13,12,.18) 38%,rgba(14,10,10,.58) 100%);}
+.login-photo-caption{position:absolute;left:18px;right:18px;bottom:14px;z-index:2;color:#fff6ee;text-shadow:0 2px 10px rgba(0,0,0,.25);}
+.login-photo-caption .mini{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:#f2d8cd;display:block;margin-bottom:.25rem;}
+.login-photo-caption .main{font-family:Georgia,'Times New Roman',serif;font-size:1.2rem;line-height:1.25;}
+.login-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 1rem;}
+.login-metric{background:rgba(255,250,246,.86);border:1px solid rgba(214,143,153,.18);border-radius:18px;padding:15px 12px;text-align:center;}
+.login-metric-big{font:500 1.55rem/1 Georgia,serif;color:#8a605f;}
+.login-metric-label{color:#7d6d67;font-size:.83rem;margin-top:.25rem;line-height:1.25;}
+.login-instruction{text-align:center;color:#5d4d47;font-family:Georgia,'Times New Roman',serif;font-size:1rem;margin:.35rem 0 .18rem;}
+.login-instruction-sub{text-align:center;color:#9a847a;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.35rem;}
+.login-separator{text-align:center;color:#c79397;padding-top:.6rem;font:500 1.1rem Georgia,serif;}
+.login-shell [data-testid="stTextInput"] input{text-align:center!important;border-radius:14px!important;min-height:50px!important;background:rgba(255,252,248,.95)!important;color:#4a3a35!important;border:1px solid rgba(171,122,117,.16)!important;font:500 1.02rem Georgia,serif!important;}
+.login-shell [data-testid="stTextInput"] input::placeholder{color:#baa49a!important;}
+.login-shell .stButton>button{border-radius:16px!important;min-height:49px!important;background:linear-gradient(180deg,#dca2a7,#cd858d)!important;border:1px solid rgba(173,113,118,.22)!important;box-shadow:0 8px 20px rgba(181,111,118,.14);}
+.login-bottom-text{text-align:center;color:#78635d;font-family:Georgia,'Times New Roman',serif;font-style:italic;line-height:1.55;font-size:1rem;padding:.65rem .7rem 0;}
+.login-bottom-text b{display:block;color:#5b4c46;font-style:normal;font-weight:500;margin-top:.25rem;}
 
-/* ---------- login ---------- */
-.login-card{background:#171412;border-radius:27px;overflow:hidden;box-shadow:0 18px 45px rgba(59,39,29,.18);border:1px solid rgba(255,255,255,.08);margin:14px auto 0;}
-.login-photo{height:235px;position:relative;overflow:hidden;}
-.login-photo img{width:100%;height:100%;object-fit:cover;object-position:center 48%;filter:brightness(.38) saturate(.68);}
-.login-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.18) 48%,rgba(19,16,14,.82) 100%);}
-.login-brand{position:absolute;z-index:2;left:0;right:0;top:32px;text-align:center;color:#f5eadc;}
-.login-initials{font-family:"Snell Roundhand","Apple Chancery","Segoe Script",cursive;font-size:4.2rem;line-height:.95;}
-.login-story{font-family:Georgia,serif;font-size:.96rem;margin-top:6px;opacity:.92;}
-.login-form{padding:9px 20px 23px;color:#f5eadc;}
-.login-label{text-align:center;font-family:Georgia,serif;font-size:.92rem;margin-bottom:8px;color:#ebdfd1;}
-.login-foot{text-align:center;font-family:"Snell Roundhand","Segoe Script",cursive;font-size:1.2rem;color:#e9d8c5;margin-top:15px;}
 
-/* ---------- widgets ---------- */
-.stButton > button{border-radius:13px !important;border:0 !important;background:#c98789 !important;color:white !important;font-weight:600 !important;min-height:43px;box-shadow:none !important;}
-.stButton > button:hover{background:#bc777a !important;color:white !important;}
-[data-testid="stTextInput"] input,[data-testid="stTextArea"] textarea{border-radius:13px !important;border-color:rgba(94,71,56,.15) !important;background:rgba(255,253,250,.92) !important;}
-[data-testid="stFileUploader"]{background:rgba(255,252,248,.7);border-radius:16px;padding:4px;}
-[data-testid="stExpander"]{background:rgba(255,252,248,.72);border:1px solid var(--line);border-radius:16px;margin-bottom:9px;overflow:hidden;}
 
-/* ---------- fixed bottom navigation (native Streamlit buttons) ---------- */
-.st-key-mobile_nav{
-  position:fixed !important;
-  left:50% !important;
-  bottom:0 !important;
-  transform:translateX(-50%) !important;
-  z-index:9999 !important;
-  width:min(100%,440px) !important;
-  min-height:76px !important;
-  padding:7px 7px 9px !important;
-  background:rgba(251,247,241,.97) !important;
-  border-top:1px solid rgba(84,62,50,.10) !important;
-  box-shadow:0 -7px 25px rgba(69,47,34,.08) !important;
-  backdrop-filter:blur(12px) !important;
-}
-.st-key-mobile_nav [data-testid="stHorizontalBlock"]{gap:2px !important;}
-.st-key-mobile_nav [data-testid="column"]{min-width:0 !important;}
-.st-key-mobile_nav .stButton{margin:0 !important;}
-.st-key-mobile_nav .stButton > button{
-  width:100% !important;
-  height:58px !important;
-  min-height:58px !important;
-  padding:4px 1px !important;
-  border-radius:12px !important;
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:1px !important;
-  box-shadow:none !important;
-  font-size:.58rem !important;
-  font-weight:500 !important;
-  line-height:1 !important;
-}
-.st-key-mobile_nav .stButton > button[kind="secondary"]{
-  background:transparent !important;
-  color:#8e827b !important;
-  border:0 !important;
-}
-.st-key-mobile_nav .stButton > button[kind="primary"]{
-  background:#f6e5e2 !important;
-  color:#bf7378 !important;
-  border:0 !important;
-}
-.st-key-mobile_nav .stButton > button svg{
-  width:20px !important;
-  height:20px !important;
-  margin:0 !important;
-}
-.st-key-mobile_nav .stButton > button p{
-  font-size:.58rem !important;
-  line-height:1 !important;
-  margin:0 !important;
-  white-space:nowrap !important;
-}
-
-@media(max-width:480px){
-  .block-container{padding-left:11px !important;padding-right:11px !important;}
-  .home-cover{height:205px;border-radius:21px;}
-  .counter-num{font-size:1.65rem;}
-  .st-key-mobile_nav{min-height:72px !important;}
-  .st-key-mobile_nav .stButton > button{height:55px !important;min-height:55px !important;}
-  .st-key-mobile_nav .stButton > button svg{width:19px !important;height:19px !important;}
-  .polaroid img{height:220px;}
+/* ============================================================
+   LOGIN SIMPLE V9 — solo pantalla de inicio refinada
+   ============================================================ */
+.simple-login-shell{max-width:430px;margin:0 auto 1.15rem;}
+.simple-login-card{background:linear-gradient(180deg,#fffdfa 0%,#f8f1e9 100%);border:1px solid rgba(199,174,143,.20);border-radius:34px;box-shadow:0 22px 55px rgba(86,61,48,.10);overflow:hidden;padding:14px 14px 20px;}
+.simple-login-photo{position:relative;height:346px;border-radius:26px;overflow:hidden;background:#e9ddd2;margin-bottom:1.05rem;}
+.simple-login-photo img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block;filter:saturate(.83) brightness(.64);transform:scale(1.04);}
+.simple-login-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,12,11,.22) 0%,rgba(18,12,11,.06) 28%,rgba(255,250,246,.00) 48%,rgba(255,250,246,.52) 74%,rgba(255,250,246,.90) 100%);}
+.simple-login-toprow{position:absolute;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;align-items:center;z-index:2;color:#f8ede2;}
+.simple-login-menu,.simple-login-miniheart{font-size:1.15rem;line-height:1;opacity:.94;}
+.simple-login-overlay{position:absolute;left:0;right:0;bottom:18px;z-index:2;text-align:center;padding:0 22px;}
+.simple-login-monogram{display:inline-block;padding:0 .7rem;}
+.simple-login-initials{font-family:"Didot","Bodoni MT","Times New Roman",serif!important;font-size:clamp(3rem,8vw,4rem);line-height:.92;color:#fff7f1;letter-spacing:.08em;text-shadow:0 5px 18px rgba(0,0,0,.18);margin:0;font-weight:400;}
+.simple-login-divider{display:flex;align-items:center;justify-content:center;gap:10px;margin:.42rem 0 .3rem;}
+.simple-login-divider:before,.simple-login-divider:after{content:"";display:block;width:38px;height:1px;background:rgba(255,241,228,.60);} 
+.simple-login-divider span{color:#f3dac7;font-size:.95rem;line-height:1;}
+.simple-login-story{font:500 1.06rem/1.1 Georgia,'Times New Roman',serif;color:#f7ebdf;letter-spacing:.02em;}
+.simple-login-tagline{font-size:.95rem;line-height:1.38;color:#f1dfd3;margin-top:.4rem;}
+.simple-login-heart{text-align:center;color:#c9a366;font-size:1.55rem;line-height:1;margin:.18rem 0 .3rem;}
+.simple-login-title{text-align:center;font:500 2.18rem/1.06 Georgia,'Times New Roman',serif;color:#7b613b;margin:.14rem 0 .16rem;}
+.simple-login-sub{text-align:center;color:#897b71;font-size:.95rem;margin-bottom:.75rem;}
+.simple-login-together{display:flex;justify-content:center;margin:.15rem 0 .9rem;}
+.simple-login-together-chip{display:inline-flex;align-items:center;gap:9px;background:#fffaf6;border:1px solid rgba(202,171,143,.36);border-radius:999px;padding:10px 16px;color:#7f675e;box-shadow:0 8px 18px rgba(146,110,95,.06);}
+.simple-login-together-chip strong{font:500 1rem Georgia,serif;color:#6e5548;}
+.simple-login-together-chip span{font-size:.9rem;}
+.simple-login-inputs{margin:0 auto;max-width:310px;}
+.simple-login-labels{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;text-align:center;color:#baa69a;font-size:.67rem;letter-spacing:.17em;text-transform:uppercase;margin-top:.35rem;margin-bottom:.2rem;}
+.simple-login-shell [data-testid="stTextInput"] input{text-align:center!important;border-radius:12px!important;min-height:52px!important;background:#fffaf5!important;color:#4c3c35!important;border:1px solid rgba(194,174,156,.45)!important;font:500 1.18rem Georgia,serif!important;box-shadow:none!important;}
+.simple-login-shell [data-testid="stTextInput"] input::placeholder{color:transparent!important;}
+.simple-login-shell .stButton>button{border-radius:18px!important;min-height:50px!important;background:linear-gradient(180deg,#e9b7b0,#d89599)!important;border:1px solid rgba(187,131,135,.22)!important;box-shadow:0 10px 24px rgba(181,111,118,.14);font-family:Georgia,'Times New Roman',serif!important;font-weight:600!important;letter-spacing:.03em;}
+.simple-login-bottom{text-align:center;color:#8a776e;font-size:.92rem;line-height:1.55;padding:.9rem .55rem 0;}
+.simple-login-bottom b{color:#6a5850;font-weight:500;}
+@media(max-width:760px){
+ .simple-login-shell{max-width:100%}.simple-login-card{border-radius:28px;padding:12px 12px 18px}.simple-login-photo{height:328px;border-radius:24px}.simple-login-title{font-size:2.05rem}.simple-login-story{font-size:1rem}.simple-login-initials{font-size:3.45rem}.simple-login-together-chip{padding:9px 14px}.simple-login-bottom{font-size:.89rem}.login-shell{max-width:100%}.login-card{border-radius:24px;padding:18px 14px 20px}.login-title{font-size:4.1rem}.login-photo-panel{height:230px;border-radius:22px}.login-metrics{grid-template-columns:1fr 1fr;gap:8px}.login-metric{padding:12px 9px}.login-metric-big{font-size:1.35rem}.block-container{padding-left:.85rem;padding-right:.85rem}.hero{padding:34px 18px 30px;border-radius:22px}
+ .metric-shell{grid-template-columns:1fr}.polaroid img{height:260px}.film-frame,.film-frame img{width:160px}.film-frame img{height:200px}
 }
 </style>
-"""
-st.markdown(CSS, unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ============================================================
 # HELPERS
@@ -354,6 +314,39 @@ VIDEO_TYPES = {".mp4", ".mov", ".m4v"}
 
 def digits_only(value: str) -> str:
     return "".join(c for c in value if c.isdigit())
+
+
+def add_months(d: date, months: int) -> date:
+    month_index = d.month - 1 + months
+    year = d.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def relationship_snapshot(today: date | None = None) -> dict:
+    today = today or date.today()
+    if today < RELATIONSHIP_START:
+        return {
+            "total_days": 0,
+            "months": 0,
+            "days": 0,
+            "days_to_six_months": max(0, (SIX_MONTH_DATE - today).days),
+        }
+
+    total_days = (today - RELATIONSHIP_START).days
+    months = (today.year - RELATIONSHIP_START.year) * 12 + (today.month - RELATIONSHIP_START.month)
+    anchor = add_months(RELATIONSHIP_START, months)
+    if anchor > today:
+        months -= 1
+        anchor = add_months(RELATIONSHIP_START, months)
+    days = (today - anchor).days
+    return {
+        "total_days": total_days,
+        "months": months,
+        "days": days,
+        "days_to_six_months": max(0, (SIX_MONTH_DATE - today).days),
+    }
 
 
 def read_json(path: Path, fallback):
@@ -373,14 +366,16 @@ def write_json(path: Path, payload) -> bool:
         return False
 
 
-def image_uri(path: Path, max_side: int = 1100) -> str | None:
+def image_uri(path: Path, max_side: int = 900) -> str | None:
     try:
         im = Image.open(path)
         im = ImageOps.exif_transpose(im).convert("RGB")
         im.thumbnail((max_side, max_side))
+        from io import BytesIO
         buf = BytesIO()
-        im.save(buf, format="JPEG", quality=86)
-        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        im.save(buf, format="JPEG", quality=84)
+        encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+        return f"data:image/jpeg;base64,{encoded}"
     except Exception:
         return None
 
@@ -424,7 +419,8 @@ def save_bb_uploads(album: str, title: str, message: str, files) -> tuple[bool, 
                 "created_at": datetime.now().isoformat(timespec="seconds"),
             })
             saved += 1
-        return write_json(BB_MEMORY_DB, db), saved
+        ok = write_json(BB_MEMORY_DB, db)
+        return ok, saved
     except Exception:
         return False, saved
 
@@ -438,11 +434,12 @@ def bb_uploads(album: str | None = None):
 
 def polaroid(path: Path, caption: str):
     uri = image_uri(path)
-    if uri:
-        st.markdown(
-            f'<div class="polaroid"><img src="{uri}"><div class="polaroid-caption">{caption}</div></div>',
-            unsafe_allow_html=True,
-        )
+    if not uri:
+        return
+    st.markdown(
+        f'<div class="polaroid"><img src="{uri}"><div class="polaroid-caption">{caption}</div></div>',
+        unsafe_allow_html=True,
+    )
 
 
 def polaroid_record(record: dict):
@@ -455,23 +452,6 @@ def polaroid_record(record: dict):
     polaroid(p, caption)
 
 
-def full_months_days(start: date, end: date) -> tuple[int, int]:
-    if end < start:
-        return 0, 0
-    months = (end.year - start.year) * 12 + (end.month - start.month)
-    y = start.year + (start.month - 1 + months) // 12
-    m = (start.month - 1 + months) % 12 + 1
-    d = min(start.day, calendar.monthrange(y, m)[1])
-    anchor = date(y, m, d)
-    if anchor > end:
-        months -= 1
-        y = start.year + (start.month - 1 + months) // 12
-        m = (start.month - 1 + months) % 12 + 1
-        d = min(start.day, calendar.monthrange(y, m)[1])
-        anchor = date(y, m, d)
-    return months, (end - anchor).days
-
-
 def render_film_roll():
     frames = []
     for moment in MOMENTS:
@@ -479,57 +459,68 @@ def render_film_roll():
         if not cover:
             continue
         uri = image_uri(cover, 520)
-        if uri:
-            frames.append(
-                f'''<div class="film-frame">
-                    <div class="film-holes"></div>
-                    <img src="{uri}" alt="{moment['short']}">
-                    <div class="film-caption">{moment['short']}</div>
-                </div>'''
-            )
+        if not uri:
+            continue
+        frames.append(
+            f'<div class="film-frame"><div class="film-holes"></div><img src="{uri}"><div class="film-caption">{moment["short"]}</div><div class="film-holes" style="margin:8px 0 0"></div></div>'
+        )
     st.markdown(
-        '<div class="film-scroll"><div class="film-roll">' + "".join(frames) + "</div></div>",
+        '<div class="film-wrap"><div class="film-roll">' + "".join(frames) + "</div></div>",
         unsafe_allow_html=True,
     )
 
 
-def go_to(section: str):
-    """Cambia de sección sin recargar el navegador ni perder la sesión."""
-    st.session_state.section = section
+def live_counter_component():
+    components.html(
+        """
+        <div id="metrics" class="metric-shell"></div>
+        <style>
+          body{margin:0;background:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#322925}
+          .metric-shell{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+          .metric-card{box-sizing:border-box;background:linear-gradient(180deg,#fffaf5,#f1e2d7);border:1px solid rgba(216,146,150,.24);border-radius:22px;padding:22px 16px;text-align:center;min-height:145px}
+          .metric-big{font:500 clamp(2.1rem,5vw,3.7rem)/1 Georgia,serif;color:#8c5f58}.metric-label{margin-top:.5rem;color:#756861;font-size:.92rem}.metric-mini{margin-top:.55rem;color:#aa7973;font-size:.82rem}
+          @media(max-width:650px){.metric-shell{grid-template-columns:1fr}.metric-card{min-height:125px}}
+        </style>
+        <script>
+        const start = new Date(2026, 2, 13, 0, 0, 0);
+        const target = new Date(2026, 8, 13, 0, 0, 0);
+        const dayMs = 86400000;
 
+        function calendarParts(now){
+          if(now < start) return {months:0, days:0};
+          let months=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth());
+          let anchor=new Date(start.getFullYear(), start.getMonth()+months, start.getDate());
+          if(anchor>now){months--; anchor=new Date(start.getFullYear(), start.getMonth()+months, start.getDate());}
+          const days=Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate())-new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate()))/dayMs);
+          return {months,days};
+        }
+        function render(){
+          const now=new Date();
+          const daysTogether=Math.max(0,Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate())-start)/dayMs));
+          const parts=calendarParts(now);
+          let diff=target-now;
+          let countdown='';
+          if(diff>0){
+            const d=Math.floor(diff/dayMs); diff-=d*dayMs;
+            const h=Math.floor(diff/3600000); diff-=h*3600000;
+            const m=Math.floor(diff/60000); diff-=m*60000;
+            const s=Math.floor(diff/1000);
+            countdown=`<div class="metric-big">${d}</div><div class="metric-label">días para nuestros 6 meses</div><div class="metric-mini">${String(h).padStart(2,'0')} h · ${String(m).padStart(2,'0')} min · ${String(s).padStart(2,'0')} seg</div>`;
+          } else {
+            countdown=`<div class="metric-big">♡</div><div class="metric-label">Ya cumplimos 6 meses</div><div class="metric-mini">Y lo mejor apenas comienza.</div>`;
+          }
+          document.getElementById('metrics').innerHTML=`
+            <div class="metric-card"><div class="metric-big">${daysTogether}</div><div class="metric-label">días juntos</div><div class="metric-mini">${parts.months} meses y ${parts.days} días siendo novios</div></div>
+            <div class="metric-card"><div class="metric-big">6</div><div class="metric-label">meses</div><div class="metric-mini">13 de septiembre de 2026 ♡</div></div>
+            <div class="metric-card">${countdown}</div>`;
+        }
+        render(); setInterval(render,1000);
+        </script>
+        """,
+        height=178,
+        scrolling=False,
+    )
 
-def render_bottom_nav(active: str):
-    # Usamos botones nativos de Streamlit para mantener la misma sesión.
-    # Los enlaces HTML anteriores recargaban la página y volvían a mostrar el login.
-    items = [
-        ("inicio", "Inicio", ":material/home:"),
-        ("momentos", "Momentos", ":material/photo_library:"),
-        ("mapa", "Mapa", ":material/location_on:"),
-        ("preguntas", "Preguntas", ":material/help:"),
-        ("razones", "Razones", ":material/favorite:"),
-        ("carta", "Carta", ":material/mail:"),
-    ]
-
-    with st.container(key="mobile_nav"):
-        cols = st.columns(6, gap="small")
-        for col, (key, label, icon) in zip(cols, items):
-            with col:
-                st.button(
-                    label,
-                    icon=icon,
-                    key=f"nav_{key}",
-                    type="primary" if key == active else "secondary",
-                    use_container_width=True,
-                    on_click=go_to,
-                    args=(key,),
-                )
-
-def save_answers(answers: list[str]) -> bool:
-    payload = {
-        "saved_at": datetime.now().isoformat(timespec="seconds"),
-        "answers": [{"question": q, "answer": a} for q, a in zip(QUESTIONS, answers)],
-    }
-    return write_json(ANSWERS_DB, payload)
 
 # ============================================================
 # SESSION / LOGIN
@@ -539,220 +530,294 @@ if "unlocked" not in st.session_state:
     st.session_state.unlocked = False
 if "reason_selected" not in st.session_state:
     st.session_state.reason_selected = None
-if "section" not in st.session_state:
-    st.session_state.section = "inicio"
 
 if not st.session_state.unlocked:
-    login_img = image_uri(ASSETS_DIR / "login_cover.jpg", 1300)
+    snapshot = relationship_snapshot()
+    login_photo = ASSETS_DIR / "login_red_jacket_cover.jpg"
+    login_uri = image_uri(login_photo, 1400) if login_photo.exists() else None
 
-    st.markdown('<div class="brand-row"><div class="brand-script">S & J</div><div class="brand-heart">♡</div></div>', unsafe_allow_html=True)
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    if login_img:
-        st.markdown(
-            f'''<div class="login-photo">
-                    <img src="{login_img}" alt="S y J">
-                    <div class="login-brand">
-                      <div class="login-initials">S & J</div>
-                      <div class="login-story">Nuestra historia ♡</div>
-                    </div>
-                </div>''',
-            unsafe_allow_html=True,
-        )
-    st.markdown('<div class="login-form"><div class="login-label">Ingresa nuestra fecha</div></div>', unsafe_allow_html=True)
+    left, center, right = st.columns([1, 1.05, 1])
+    with center:
+        st.markdown('<div class="simple-login-shell">', unsafe_allow_html=True)
+        st.markdown('<div class="simple-login-card">', unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns([1, 1, 1.35])
-    with c1:
-        day = st.text_input("Día", placeholder="13", max_chars=2, label_visibility="collapsed", key="login_day")
-    with c2:
-        month = st.text_input("Mes", placeholder="03", max_chars=2, label_visibility="collapsed", key="login_month")
-    with c3:
-        year = st.text_input("Año", placeholder="2026", max_chars=4, label_visibility="collapsed", key="login_year")
-
-    if st.button("ENTRAR", use_container_width=True, key="login_enter"):
-        if digits_only(f"{day}{month}{year}") == ACCESS_CODE:
-            st.session_state.unlocked = True
-            st.session_state.section = "inicio"
-            st.rerun()
-        else:
-            st.error("Mmm bb… esa no es nuestra fecha 👀♡")
-
-    st.markdown('<div class="login-foot">Cada aventura nos trajo hasta aquí ♡</div></div>', unsafe_allow_html=True)
-    st.stop()
-
-# ============================================================
-# ROUTING
-# ============================================================
-
-allowed_sections = {"inicio", "momentos", "mapa", "preguntas", "razones", "carta"}
-section = st.session_state.get("section", "inicio")
-if section not in allowed_sections:
-    section = "inicio"
-    st.session_state.section = "inicio"
-
-# Header compacto tipo app
-st.markdown(
-    '<div class="brand-row"><div class="brand-script">S & J</div><div class="brand-heart">♡</div></div>',
-    unsafe_allow_html=True,
-)
-
-# ============================================================
-# INICIO
-# ============================================================
-
-if section == "inicio":
-    home_img = image_uri(ASSETS_DIR / "home_cover.jpg", 1200)
-    if home_img:
-        st.markdown(
-            f'''<div class="home-cover">
-                  <img src="{home_img}" alt="Nosotros">
-                  <div class="home-cover-copy">
-                    <div class="home-date">13 · 03 · 2026</div>
-                    <div class="home-cover-title">Nuestro lugar favorito: juntos ♡</div>
-                    <div class="home-cover-sub">Cada momento contigo se vuelve parte de nuestra historia.</div>
-                  </div>
-                </div>''',
-            unsafe_allow_html=True,
-        )
-
-    today = date.today()
-    total_days = max((today - RELATIONSHIP_START).days, 0)
-    months, extra_days = full_months_days(RELATIONSHIP_START, today)
-    days_left = max((SIX_MONTH_DATE - today).days, 0)
-
-    st.markdown('<div class="eyebrow">Nuestro tiempo</div><div class="page-title">Lo que llevamos siendo nosotros</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'''<div class="counter-grid">
-              <div class="counter-card"><div class="counter-num">{total_days}</div><div class="counter-label">días juntos</div></div>
-              <div class="counter-card"><div class="counter-num">{months}</div><div class="counter-label">meses</div><div class="counter-small">+ {extra_days} días</div></div>
-              <div class="counter-card"><div class="counter-num">{days_left}</div><div class="counter-label">días para 6 meses</div></div>
-            </div>''',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f'''<div class="soft-note">
-              <div class="soft-note-title">Para nosotros, cada momento cuenta ♡</div>
-              <div class="small-muted">No quise hacerte solo una tarjeta, {BB}. Quise hacer un lugar para volver a nuestras fotos, salidas y aventuras… y seguir agregando nuevas.</div>
-            </div>''',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown('<div class="script-title">Nuestro rollo fotográfico</div><div class="page-sub">Deslízalo hacia los lados. Cada cuadro pertenece a un momento de nosotros.</div>', unsafe_allow_html=True)
-    render_film_roll()
-
-    st.markdown('<div class="paper-card"><div class="quote">“No es la cantidad de tiempo, es todo lo que hemos vivido juntos.” ♡</div></div>', unsafe_allow_html=True)
-
-# ============================================================
-# MOMENTOS / ALBUM
-# ============================================================
-
-elif section == "momentos":
-    st.markdown('<div class="eyebrow">Nuestro álbum</div><div class="page-title">Momentos que quiero guardar ♡</div><div class="page-sub">Cada salida tiene su propia pequeña historia. Abre una para ver las fotos y videos.</div>', unsafe_allow_html=True)
-
-    names = [m["title"] for m in MOMENTS]
-    selected = st.selectbox("Ir a un recuerdo", ["Ver todos"] + names, label_visibility="collapsed")
-    filtered = MOMENTS if selected == "Ver todos" else [m for m in MOMENTS if m["title"] == selected]
-
-    for i, moment in enumerate(filtered):
-        photos, videos = media_for_moment(moment)
-        user_records = bb_uploads(moment["slug"])
-        expanded = selected != "Ver todos" or i == 0
-        with st.expander(f"{moment['short']}  ♡", expanded=expanded):
+        if login_uri:
             st.markdown(
-                f'''<div class="memory-head">
-                      <div class="memory-title">{moment['title']}</div>
-                      <div class="memory-category">{moment['category']}</div>
-                      <div class="memory-phrase">“{moment['phrase']}”</div>
-                    </div>''',
+                f"""
+                <div class="simple-login-photo">
+                  <img src="{login_uri}" alt="S y J">
+                  <div class="simple-login-toprow">
+                    <div class="simple-login-menu">≡</div>
+                    <div class="simple-login-miniheart">♡</div>
+                  </div>
+                  <div class="simple-login-overlay">
+                    <div class="simple-login-monogram">
+                      <div class="simple-login-initials">{INITIALS}</div>
+                      <div class="simple-login-divider"><span>♡</span></div>
+                    </div>
+                    <div class="simple-login-story">Nuestra historia</div>
+                    <div class="simple-login-tagline">La noche en que comenzó lo nuestro, bb ♡</div>
+                  </div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
 
-            cover = cover_for(moment)
-            if cover:
-                polaroid(cover, moment["short"])
-            for p in photos:
-                polaroid(p, "Otro pedacito de este día ♡")
-            for v in videos:
-                st.video(str(v))
-            for rec in user_records:
-                polaroid_record(rec)
+        st.markdown('<div class="simple-login-heart">♡</div>', unsafe_allow_html=True)
+        st.markdown('<div class="simple-login-title">Ingresa nuestra<br>fecha</div>', unsafe_allow_html=True)
+        st.markdown('<div class="simple-login-sub">Ese día cambió todo.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="script-title">Agrega tus favoritas, bb ♡</div><div class="page-sub">Si tienes una foto que yo no puse, también puede vivir aquí.</div>', unsafe_allow_html=True)
-    with st.form("upload_form", clear_on_submit=True):
-        album_label = st.selectbox("¿A qué recuerdo pertenece?", ["Álbum general"] + names)
-        title = st.text_input("Nombre del recuerdo", placeholder="Ej. Esta me encanta")
-        message = st.text_area("¿Quieres escribir algo?", placeholder="Ej. Me encanta este día porque…", height=80)
-        uploads = st.file_uploader("Sube una o varias fotos", type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True)
-        sent = st.form_submit_button("Guardar en nuestro álbum ♡", use_container_width=True)
+        st.markdown(
+            f'<div class="simple-login-together"><div class="simple-login-together-chip"><strong>{snapshot["months"]} meses · {snapshot["days"]} días</strong><span>siendo novios</span></div></div>',
+            unsafe_allow_html=True,
+        )
 
-    if sent:
-        if not uploads:
-            st.warning("Elige por lo menos una foto, bb ♡")
-        else:
-            slug_map = {m["title"]: m["slug"] for m in MOMENTS}
-            album = "general" if album_label == "Álbum general" else slug_map[album_label]
-            ok, saved = save_bb_uploads(album, title, message, uploads)
-            if ok and saved:
-                st.success(f"Listo ♡ Guardé {saved} foto(s).")
+        st.markdown('<div class="simple-login-inputs">', unsafe_allow_html=True)
+        dcol, mcol, ycol = st.columns([1, 1, 1.15], gap="small")
+        with dcol:
+            code_day = st.text_input("Día", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_day")
+        with mcol:
+            code_month = st.text_input("Mes", value="", placeholder="", max_chars=2, label_visibility="collapsed", key="login_month")
+        with ycol:
+            code_year = st.text_input("Año", value="", placeholder="", max_chars=4, label_visibility="collapsed", key="login_year")
+
+        st.markdown('<div class="simple-login-labels"><div>Día</div><div>Mes</div><div>Año</div></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if st.button("Comenzar", use_container_width=True):
+            code = f"{code_day}{code_month}{code_year}"
+            if digits_only(code) == ACCESS_CODE:
+                st.session_state.unlocked = True
                 st.rerun()
             else:
-                st.error("No pude guardarlas en esta versión local. En la versión final lo conectaremos a Supabase.")
+                st.error("Mmm bb… esa no es nuestra fecha 👀♡")
+
+        st.markdown(
+            '<div class="simple-login-bottom">No es solo una fecha. <b>Es el inicio de nuestra historia favorita.</b></div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown('</div></div>', unsafe_allow_html=True)
+    st.stop()
+
+# ============================================================
+# MAIN APP
+# ============================================================
+
+st.markdown(
+    f"""
+    <div class="hero">
+      <div class="hero-kicker">Nuestro lugar favorito: juntos</div>
+      <div class="hero-title">{INITIALS}</div>
+      <div class="hero-sub">
+        Hola {BB} ♡ Este es nuestro álbum, nuestro mapa y un pedacito de todo lo que hemos vivido desde el 13 de marzo.
+      </div>
+      <div class="hero-heart">♡</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+live_counter_component()
+
+st.markdown('<div class="quote-strip">“No es la cantidad de tiempo, es todo lo que hemos vivido juntos.” ♡</div>', unsafe_allow_html=True)
+
+tabs = st.tabs([
+    "♡ Inicio",
+    "🎞 Álbum",
+    "📍 Mapa",
+    "💬 5 preguntas",
+    "♥ 10 razones",
+    "✉ Para ti",
+])
+
+# ------------------------------------------------------------
+# INICIO
+# ------------------------------------------------------------
+with tabs[0]:
+    st.markdown('<div class="section-title">Nuestro rollo fotográfico</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Deslízalo: cada cuadro es una salida, un viaje o un momento que ya forma parte de nosotros.</div>', unsafe_allow_html=True)
+    render_film_roll()
+
+    left, right = st.columns([1.05, .95])
+    with left:
+        st.markdown(
+            f"""
+            <div class="scrap-note">
+              <h3>Para nosotros, cada momento cuenta ♡</h3>
+              <p>No quise hacerte solamente una tarjeta, {BB}. Quise hacer un lugar al que puedas volver, mirar nuestras fotos y recordar todo lo que hemos ido construyendo.</p>
+              <p>Hay salidas grandes, viajes, noches especiales y también momentos simples. Para mí todos cuentan porque los viví contigo.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with right:
+        st.markdown(
+            """
+            <div class="paper-card">
+              <h3 style="margin-top:0">Lo que ya vive aquí</h3>
+              <p>♡ 10 recuerdos organizados por lugar o salida.</p>
+              <p>♡ Fotos estilo Polaroid y videos de nuestras aventuras.</p>
+              <p>♡ Un mapa de los lugares públicos que hemos visitado.</p>
+              <p>♡ 5 preguntas para ver nuestra historia desde tus ojos.</p>
+              <p>♡ 10 razones escondidas para descubrir una por una.</p>
+              <p>♡ Y un espacio para que tú también agregues tus fotos favoritas.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# ------------------------------------------------------------
+# ALBUM
+# ------------------------------------------------------------
+with tabs[1]:
+    st.markdown('<div class="section-title">Nuestro álbum ♡</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Cada lugar tiene su propia pequeña historia. Abre los recuerdos y recórrelos a tu ritmo.</div>', unsafe_allow_html=True)
+
+    # Mini navegación por recuerdo
+    moment_names = [m["title"] for m in MOMENTS]
+    selected_name = st.selectbox("Ir directamente a un recuerdo", ["Ver todos"] + moment_names)
+    filtered = MOMENTS if selected_name == "Ver todos" else [m for m in MOMENTS if m["title"] == selected_name]
+
+    for n, moment in enumerate(filtered, 1):
+        photos, videos = media_for_moment(moment)
+        user_records = bb_uploads(moment["slug"])
+        with st.expander(f"{moment['short']} · {moment['category']} ♡", expanded=(selected_name != "Ver todos" or n == 1)):
+            st.markdown(
+                f"""
+                <div class="location-card">
+                  <div class="location-title">{moment['title']}</div>
+                  <div class="location-category">{moment['category']}</div>
+                  <div class="location-phrase">“{moment['phrase']}”</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            all_photo_items = [(p, moment["short"]) for p in photos]
+            cols = st.columns(2 if len(all_photo_items) > 1 else 1)
+            for i, (photo, caption) in enumerate(all_photo_items):
+                with cols[i % len(cols)]:
+                    polaroid(photo, caption)
+
+            if videos:
+                st.markdown("**Un pedacito en movimiento 🎥**")
+                for video in videos:
+                    st.video(str(video))
+
+            if user_records:
+                st.markdown(f"**Fotos que {BB} agregó a este recuerdo ♡**")
+                ucols = st.columns(2)
+                for i, record in enumerate(user_records):
+                    with ucols[i % 2]:
+                        polaroid_record(record)
+
+    # Fotos nuevas de ella
+    st.write("")
+    st.markdown('<div class="section-title">Agrega tus favoritas, bb ♡</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Puedes sumar fotos tuyas que quieras guardar dentro de nuestro álbum.</div>', unsafe_allow_html=True)
+
+    with st.form("bb_upload_form", clear_on_submit=True):
+        album_label = st.selectbox(
+            "¿A qué recuerdo pertenece?",
+            ["Álbum general"] + [m["title"] for m in MOMENTS],
+        )
+        title = st.text_input("Ponle un nombre", placeholder="Ej. Una de mis fotos favoritas")
+        message = st.text_area("¿Quieres escribir algo?", placeholder="Ej. Me encanta este día porque…", height=85)
+        files = st.file_uploader("Sube una o varias fotos", type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True)
+        submitted = st.form_submit_button("Guardar en nuestro álbum ♡", use_container_width=True)
+
+    if submitted:
+        if not files:
+            st.warning("Primero elige al menos una foto, bb ♡")
+        else:
+            slug_by_title = {m["title"]: m["slug"] for m in MOMENTS}
+            album = "general" if album_label == "Álbum general" else slug_by_title[album_label]
+            ok, saved = save_bb_uploads(album, title, message, files)
+            if ok and saved:
+                st.success(f"Listo bb ♡ Guardé {saved} foto(s) en nuestro álbum.")
+                st.rerun()
+            else:
+                st.error("No pude guardar las fotos en el disco de esta versión. Más adelante podemos conectarlo a Supabase para que queden guardadas en la nube.")
 
     general_records = bb_uploads("general")
     if general_records:
-        st.markdown('<div class="script-title">Las favoritas que bb agregó</div>', unsafe_allow_html=True)
-        for rec in general_records:
-            polaroid_record(rec)
+        st.markdown("### Las favoritas que bb agregó ♡")
+        gcols = st.columns(3)
+        for i, record in enumerate(general_records):
+            with gcols[i % 3]:
+                polaroid_record(record)
 
-# ============================================================
+# ------------------------------------------------------------
 # MAPA
-# ============================================================
+# ------------------------------------------------------------
+with tabs[2]:
+    st.markdown('<div class="section-title">Nuestro mapa de recuerdos 📍</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Cada punto es una historia que ya podemos volver a visitar. Los lugares privados no aparecen por ubicación.</div>', unsafe_allow_html=True)
 
-elif section == "mapa":
-    st.markdown('<div class="eyebrow">Nuestros lugares</div><div class="page-title">El mapa de nosotros ♡</div><div class="page-sub">Cada punto guarda una historia. Los lugares privados no aparecen en el mapa.</div>', unsafe_allow_html=True)
+    mapped = [m for m in MOMENTS if m.get("coords")]
+    df = pd.DataFrame([
+        {"lat": m["coords"][0], "lon": m["coords"][1], "Lugar": m["title"]}
+        for m in mapped
+    ])
+    st.map(df, latitude="lat", longitude="lon", size=90, zoom=5)
 
-    rows = []
-    for m in MOMENTS:
-        if m.get("coords"):
-            rows.append({"latitude": m["coords"][0], "longitude": m["coords"][1], "lugar": m["short"]})
-    if rows:
-        st.map(pd.DataFrame(rows), latitude="latitude", longitude="longitude", zoom=5, use_container_width=True)
-
-    for m in MOMENTS:
-        cover = cover_for(m)
-        st.markdown(f'<div class="memory-head"><div class="memory-title">{m["short"]}</div><div class="memory-category">{m["category"]}</div><div class="memory-phrase">{m["phrase"]}</div></div>', unsafe_allow_html=True)
+    place = st.selectbox("Explora un punto del mapa", [m["title"] for m in mapped], key="map_place")
+    chosen = next(m for m in mapped if m["title"] == place)
+    cover = cover_for(chosen)
+    c1, c2 = st.columns([.8, 1.2])
+    with c1:
         if cover:
-            uri = image_uri(cover, 600)
-            if uri:
-                st.markdown(f'<div style="margin:-4px 0 13px"><img src="{uri}" style="width:100%;height:145px;object-fit:cover;border-radius:15px;filter:saturate(.82)"></div>', unsafe_allow_html=True)
+            polaroid(cover, chosen["short"])
+    with c2:
+        st.markdown(
+            f"""
+            <div class="paper-card">
+              <h3 style="margin-top:0">{chosen['title']}</h3>
+              <p style="font-family:Georgia,serif;font-style:italic">“{chosen['phrase']}”</p>
+              <p class="small">Cada lugar, un recuerdo. Cada recuerdo, tú y yo. ♡</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-# ============================================================
+    st.info("TopGolf y nuestra primera salida todavía no tienen ubicación exacta en el mapa. En cuanto me digas dónde fueron, los agregamos. La comida en el depa se mantiene privada a propósito.")
+
+# ------------------------------------------------------------
 # 5 PREGUNTAS
-# ============================================================
+# ------------------------------------------------------------
+with tabs[3]:
+    st.markdown(f'<div class="section-title">5 preguntas para ti, {BB} ♡</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">No es un examen. Solo quiero saber cómo se ve nuestra historia desde tus ojos.</div>', unsafe_allow_html=True)
 
-elif section == "preguntas":
-    st.markdown('<div class="eyebrow">Para ti, bb</div><div class="page-title">5 preguntas de nosotros ♡</div><div class="page-sub">No es un examen. Solo quiero conocer nuestra historia desde tus ojos.</div>', unsafe_allow_html=True)
+    saved_answers = read_json(ANSWERS_DB, {})
+    with st.form("questions_form"):
+        responses = {}
+        for i, q in enumerate(QUESTIONS, 1):
+            st.markdown(f'<div class="question-num">{i}</div><b>{q}</b>', unsafe_allow_html=True)
+            responses[str(i)] = st.text_area(
+                f"Respuesta {i}",
+                value=saved_answers.get(str(i), ""),
+                placeholder="Escribe aquí lo que piensas…",
+                height=95,
+                label_visibility="collapsed",
+                key=f"question_{i}",
+            )
+            st.write("")
+        save_answers = st.form_submit_button("Guardar mis respuestas ♡", use_container_width=True)
 
-    answers = []
-    for i, q in enumerate(QUESTIONS, 1):
-        st.markdown(f'<div class="paper-card"><div class="q-number">{i}</div><div class="q-title">{q}</div></div>', unsafe_allow_html=True)
-        a = st.text_area(f"Respuesta {i}", key=f"answer_{i}", placeholder="Escribe aquí…", label_visibility="collapsed", height=95)
-        answers.append(a)
-
-    if st.button("Guardar mis respuestas ♡", use_container_width=True):
-        if any(not a.strip() for a in answers):
-            st.warning("Todavía falta por responder alguna, bb ♡")
-        elif save_answers(answers):
-            st.success("Guardadas ♡ Me va a encantar leerlas.")
+    if save_answers:
+        if write_json(ANSWERS_DB, responses):
+            st.success("Ya quedaron guardadas, bb ♡ Estas respuestas también son parte de nuestra historia.")
         else:
-            st.error("No pude guardar las respuestas en esta versión local.")
+            st.error("No pude guardar las respuestas en el disco de esta versión.")
 
-# ============================================================
+# ------------------------------------------------------------
 # 10 RAZONES
-# ============================================================
-
-elif section == "razones":
-    st.markdown('<div class="eyebrow">Una por una</div><div class="page-title">10 razones por las que amo estar contigo ♡</div><div class="page-sub">Toca un número y descubre una razón.</div>', unsafe_allow_html=True)
+# ------------------------------------------------------------
+with tabs[4]:
+    st.markdown('<div class="section-title">10 razones por las que amo estar contigo ♡</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-sub">Toca un corazón, {BB}. No quiero que las leas todas de golpe.</div>', unsafe_allow_html=True)
 
     cols = st.columns(5)
     for i in range(10):
@@ -761,43 +826,49 @@ elif section == "razones":
                 st.session_state.reason_selected = i
 
     if st.session_state.reason_selected is None:
-        st.markdown('<div class="soft-note"><div class="soft-note-title">Elige un corazón ♡</div><div class="small-muted">Hay diez pequeñas razones esperando aquí.</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="scrap-note"><h3>Hay 10 pequeños mensajes escondidos aquí ♡</h3><p class="center">Elige el corazón que quieras abrir primero.</p></div>', unsafe_allow_html=True)
     else:
-        idx = st.session_state.reason_selected
+        i = st.session_state.reason_selected
         st.markdown(
-            f'<div class="reason-card"><div class="reason-number">Razón #{idx+1}</div><div class="reason-text">{REASONS[idx]}</div></div>',
+            f"""
+            <div class="reason-card">
+              <div class="reason-num">Razón #{i+1}</div>
+              <div class="reason-text">{REASONS[i]}</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        moment = MOMENTS[idx % len(MOMENTS)]
-        cover = cover_for(moment)
-        if cover:
-            polaroid(cover, "Un recuerdo para acompañar esta razón ♡")
 
-# ============================================================
+# ------------------------------------------------------------
 # CARTA
-# ============================================================
-
-elif section == "carta":
-    st.markdown('<div class="eyebrow">Solo para ti</div><div class="page-title">Para mi bb ♡</div><div class="page-sub">Una carta pequeña para cerrar este primer capítulo.</div>', unsafe_allow_html=True)
+# ------------------------------------------------------------
+with tabs[5]:
+    st.markdown(f'<div class="section-title">Para ti, {BB} ♡</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Una última página antes de seguir escribiendo las siguientes.</div>', unsafe_allow_html=True)
 
     st.markdown(
-        f'''<div class="soft-note">
-              <div class="soft-note-title">Para ti, amor ♡</div>
-              <div class="quote" style="font-style:normal">
-                Quise hacerte esto porque nuestros meses juntos son mucho más que un número. Son salidas, viajes, conversaciones, risas, noches especiales y momentos normales que contigo dejaron de sentirse normales.<br><br>
-                Gracias por cada aventura, por los recuerdos que ya tenemos y por todo lo que todavía nos falta vivir. Me gusta pensar que esta app no termina aquí: va a ir creciendo igual que nuestra historia.<br><br>
-                Te elijo hoy, mañana y en cada capítulo que venga, {BB}. ♡
-              </div>
-            </div>''',
+        f"""
+        <div class="scrap-note">
+          <h3>Mi bb,</h3>
+          <p>Quise hacer esto porque seis meses pueden parecer solo una fecha, pero cuando pienso en todo lo que hemos vivido dentro de ese tiempo, para mí significa muchísimo más.</p>
+          <p>Me gustan nuestros viajes y nuestras salidas, pero también me gustan los momentos normales: comer juntos, platicar, reírnos, estar cansados y aun así querer compartir el rato.</p>
+          <p>No somos perfectos, pero nuestra historia es mi favorita. Gracias por cada aventura, por cada foto y por todo lo que todavía nos falta conocer juntos.</p>
+          <p>Porque lo mejor apenas comienza… ♡</p>
+          <p style="text-align:right;font-family:Georgia,serif;font-size:1.08rem">— J</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write("")
+    st.markdown(
+        """
+        <div class="paper-card center">
+          <h3>Nuestro próximo capítulo</h3>
+          <p>13 de septiembre de 2026 · 6 meses juntos ♡</p>
+          <p class="small">Y después… otro mes, otro viaje, otra foto, otra historia.</p>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    today = date.today()
-    left = max((SIX_MONTH_DATE - today).days, 0)
-    if today < SIX_MONTH_DATE:
-        st.markdown(f'<div class="paper-card" style="text-align:center"><div class="counter-num">{left}</div><div class="counter-label">días para nuestros 6 meses</div><div class="small-muted" style="margin-top:8px">13 de septiembre de 2026 ♡</div></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="paper-card" style="text-align:center"><div class="script-title">Feliz 6 meses, bb ♡</div><div class="small-muted">Y esto apenas comienza.</div></div>', unsafe_allow_html=True)
-
-# Navegación inferior siempre visible
-render_bottom_nav(section)
+st.markdown('<div class="quote-strip">“Cada salida nos trajo hasta aquí.” · S & J ♡</div>', unsafe_allow_html=True)
